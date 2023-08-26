@@ -1,34 +1,48 @@
 import sqlite3
+import numpy as np
+import json
 
 conn = sqlite3.connect("dataBase.db")
 cursor = conn.cursor()
 
-def addSongScore(artist, song):
-    cursor.execute("CREATE TABLE IF NOT EXISTS artist (id INTEGER PRIMARY KEY, name TEXT, song TEXT, votes INTEGER)")
-    
-    cursor.execute("SELECT votes FROM artist WHERE name = ?", (artist,))
-    row = cursor.fetchone()
-    if row is not None:
-        votes = row[0]
-        cursor.execute("UPDATE artist SET votes = ? WHERE name = ?", (votes + 1, artist))
-        conn.commit()
-        return
-    
-    cursor.execute("INSERT INTO artist (name, song, votes) VALUES (?, ?, ?)", (artist, song, 1))
+cursor.execute("CREATE TABLE IF NOT EXISTS artists (artist TEXT, song TEXT, votes INTEGER, link TEXT)")
+
+def addSongScore(artist, song, link):
+    cursor.execute("SELECT * FROM artists WHERE artist=?", (artist,))
+    result = cursor.fetchone()
+
+    if result:
+        print("existing artist")
+        
+        cursor.execute("SELECT * FROM artists WHERE artist=? AND song=?", (artist, song))
+        result = cursor.fetchone()
+
+        if result:
+            cursor.execute("UPDATE artists SET votes=votes+1 WHERE artist=? AND song=?", (artist, song))
+        else:
+            cursor.execute("INSERT INTO artists (artist, song, votes) VALUES (?, ?, ?)", (artist, song, +1))
+    else:
+        print("new artist")
+        cursor.execute("INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, 1, ?)", (artist, song, link))
     conn.commit()
 
+
 def printSongs():
-    cursor.execute("SELECT * FROM artist")
+    cursor.execute("SELECT * FROM artists")
     rows = cursor.fetchall()
     
     for row in rows:
+        print(row)
         pass
 
 def searchArtist(name):
-    cursor.execute("SELECT * FROM artist WHERE name=?", (name,))
+    cursor.execute("SELECT * FROM artists WHERE artist=?", (name,))
     rows = cursor.fetchall()
     
-    result = [rows[i] for i in range(min(5, len(rows) )) ]
+    result = [rows[i] for i in range(min(6, len(rows) )) ]
+    result = json.dumps(result)
+    #result = tuple(map(tuple, result)) 
+
     return result
 
 

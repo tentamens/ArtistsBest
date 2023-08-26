@@ -23,6 +23,7 @@ authOptions = htppRequest.authOptions
 response = requests.post(authOptions['url'], headers=authOptions['headers'], data=authOptions['form'])
 if response.status_code == 200:
     token = response.json()['access_token']
+    print(token)
 
 
 
@@ -31,7 +32,7 @@ async def getArtistID(inputName):
     headers = {'Authorization': f"Bearer {token}"}
     response = requests.get(search_url, headers=headers)
     if response.status_code != 200:
-        print("there was an error fetching the data error code " + response.status_code)
+        print(f"there was an error fetching the data error code {response.status_code}")
         return
     
     artists = response.json()['artists']['items']
@@ -50,6 +51,7 @@ async def getArtistSongs(inputName, inputSong):
         return
     
     params = {'q': f"{inputName} {inputSong}", 'type': 'track'}
+    
     response = requests.get('https://api.spotify.com/v1/search', headers=headers, params=params)
     
     if response.status_code != 200:
@@ -69,6 +71,7 @@ async def getArtist(inputName):
         return
     
     params = {'q': inputName, 'type': 'artist'}
+    print(params)
     response = requests.get('https://api.spotify.com/v1/search', headers=headers, params=params)
     
     if response.status_code != 200:
@@ -91,30 +94,31 @@ def search_track(table, track_name):
 
 async def testing(artist, song):
     result = await getArtistSongs(artist, song)
-
+    
     artistTrueName = await getArtist(artist)
 
-    dataBase.addSongScore(artistTrueName[0], result[0])
-
+    # add sone to score with url and name and song
+    dataBase.addSongScore(artistTrueName[0], result[0], result[1])
+    
     dataBase.searchArtist(artistTrueName[0])
 
     return
 
 
+
 @app.api_route("/api/load/bestSongs", methods=["POST"])
 async def loadBestSongs(request: Request):
+    await testing("post malone", "Something Real")
     data = await request.json()
-    artistTrueName = await getArtist(data[0])
+    
 
 
+    artistTrueName = await getArtist(data["artistName"])
 
-    dataBase.addSongScore(data['artist'], data['song'])
-    return JSONResponse(status_code=200)
+    result = dataBase.searchArtist(artistTrueName[0])
 
-# an api end point that gets the best songs from a given artist 
-@app.api_route("/api/load/bestSongs/{artist}", methods=["GET"])
-async def loadBestSongs(artist: str):
-    pass
+    return JSONResponse(content=result, status_code=200)
+
 
 if __name__ == "__main__":
     import uvicorn
