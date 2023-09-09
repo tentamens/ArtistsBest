@@ -20,7 +20,7 @@ def addSongScore(artist, song, link):
         if result:
             cursor.execute("UPDATE artists SET votes=votes+1 WHERE artist=? AND song=?", (artist, song))
         else:
-            cursor.execute("INSERT INTO artists (artist, song, votes) VALUES (?, ?, ?)", (artist, song, +1))
+            cursor.execute("INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, ?, ?)", (artist, song, +1, link))
     else:
         print("new artist")
         cursor.execute("INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, 1, ?)", (artist, song, link))

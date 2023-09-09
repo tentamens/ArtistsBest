@@ -2,3 +2,5 @@ htppRequest.py
 spotify.py
 __pycache__
 dataBase.db
+env
+.vscode
