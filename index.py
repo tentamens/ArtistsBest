@@ -53,6 +53,16 @@ def find_closest_word(input_str, word_list):
             min_distance = distance
     return closest_word
 
+def findClosestWord(inputStr, wordList):
+    closest_word = None
+    min_distance = float("inf")
+    for word in wordList:
+        distance = Levenshtein.distance(inputStr.lower(), word.lower())
+        if distance < min_distance:
+            closest_word = word
+            min_distance = distance
+    return closest_word
+
 
 async def getArtistSongs(inputName, inputSong, userToken):
     headers = {"Authorization": f"Bearer {userToken}"}
@@ -176,7 +186,7 @@ async def searchArtist(request: Request):
     t = threading.Thread(target=handleArtistsCache, args=(artistName[0], data["token"]))
     t.start()
 
-    return JSONResponse(content=response, status_code=200)
+    return JSONResponse(content=artistName[0], status_code=200)
 
 
 @app.api_route("/api/get/token", methods=["GET"])
@@ -198,15 +208,16 @@ async def createToken():
 async def vote(data: Request):
     data = await data.json()
     if data["artistName"] not in searchArtistCache:
-        return JSONResponse(status_code=400)
-    allSongs = searchArtistCache["artistName"]
+        print(data["artistName"])
+        return JSONResponse("",status_code=400)
+    allSongs = searchArtistCache[data["artistName"]]
     
+    justName = [song for song in allSongs.keys()]
     
-    artistSongAndLink = await getArtistSongs(
-        , data["songName"], data["token"]
-    )
+    correctSong = findClosestWord(data["songName"], justName)
+    
     dataBase.addSongScore(
-        data["artistName"], artistSongAndLink[0], artistSongAndLink[1]
+        data["artistName"], correctSong, allSongs[correctSong]
     )
 
 
