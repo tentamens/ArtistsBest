@@ -1,16 +1,19 @@
-import base64
-import requests
-import asyncio
+
 import htppRequest
-from prettytable import PrettyTable
-import dataBase
+import scripts.dataBase as dataBase
+import apikeys
+import scripts.spotifyFunctions as spotFunc 
+import scripts.genFunctions as genFunc
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import pprint
+
 import Levenshtein
 import json
 import threading
+import time
+import requests
 
 
 searchArtistCache = {}
@@ -43,124 +46,11 @@ with open("searchArtistsCache.json", "r") as read_file:
     searchArtistCache = json.load(read_file)
 
 
-def find_closest_word(input_str, word_list):
-    closest_word = None
-    min_distance = float("inf")
-    word_list = [item["name"] for item in word_list]
-    for word in word_list:
-        distance = Levenshtein.distance(input_str.lower(), word.lower())
-        if distance < min_distance:
-            closest_word = word
-            min_distance = distance
-    return closest_word
-
-def findClosestWord(inputStr, wordList):
-    closest_word = None
-    min_distance = float("inf")
-    for word in wordList:
-        distance = Levenshtein.distance(inputStr.lower(), word.lower())
-        if distance < min_distance:
-            closest_word = word
-            min_distance = distance
-    return closest_word
-
-
-async def getArtistSongs(inputName, inputSong, userToken):
-    headers = {"Authorization": f"Bearer {userToken}"}
-
-    params = {"q": f"{inputName} {inputSong}", "type": "track"}
-
-    response = requests.get(
-        "https://api.spotify.com/v1/search", headers=headers, params=params
-    )
-
-    if response.status_code != 200:
-        print(f"there was an error fetching the data error code {response.status_code}")
-        return [None, response.status_code]
-
-    tracks = response.json()["tracks"]["items"]
-    songs_and_links = [
-        {"name": track["name"], "url": track["external_urls"]["spotify"]}
-        for track in tracks
-    ]
-    print(songs_and_links)
-    justArtists = [{"name": artist["name"]} for artist in songs_and_links]
-    inputnameMatch = find_closest_word(inputSong, justArtists)
-
-    output = [item for item in songs_and_links if item["name"] == inputnameMatch]
-
-    return [output[0]["name"], output[0]["url"]]
-
-
-async def getArtist(inputName, userToken):
-    headers = {"Authorization": f"Bearer {userToken}"}
-    params = {"q": inputName, "type": "artist"}
-    response = requests.get(
-        "https://api.spotify.com/v1/search", headers=headers, params=params
-    )
-
-    if response.status_code != 200:
-        print(
-            f"there was an error fetching the data error code get artist {response.status_code}"
-        )
-        return [None, response.status_code]
-
-    artists = response.json()["artists"]["items"]
-    artistAndSongs = [
-        {"name": artist["name"], "url": artist["external_urls"]["spotify"]}
-        for artist in artists
-    ]
-
-    justArtists = [{"name": artist["name"]} for artist in artistAndSongs]
-    closedOutput = find_closest_word(inputName, justArtists)
-    output = [item for item in artistAndSongs if item["name"] == closedOutput]
-
-    return [output[0]["name"], output[0]["url"]]
-
-
-def getArtistID(inputName, userToken):
-    headers = {
-        "Authorization": f"Bearer {userToken}",
-    }
-    search_url = f"https://api.spotify.com/v1/search?q={inputName}&type=artist"
-    search_response = requests.get(search_url, headers=headers)
-    search_response = search_response.json()
-    aristID = None
-
-    for i in search_response["artists"]["items"]:
-        if i["name"] == inputName:
-            aristID = i["id"]
-            break
-
-    return aristID
-
-
-def getArtistsSongs(inputID, userToken, name):
-    if name in searchArtistCache:
-        print("hello world")
-        return
-
-    headers = {"Authorization": f"Bearer {userToken}"}
-    albums_url = f"https://api.spotify.com/v1/artists/{inputID}/albums"
-    albums_response = requests.get(albums_url, headers=headers)
-    albums_response = albums_response.json()
-
-    albumID = [i["id"] for i in albums_response["items"]]
-    entry = {
-        i["name"]: i["external_urls"]["spotify"]
-        for response in albumID
-        for i in response["items"]
-    }
-
-    searchArtistCache[name] = entry
-    with open("searchArtistsCache.json", "w") as write_file:
-        json.dump(searchArtistCache, write_file)
-
 
 def handleArtistsCache(name, userToken):
-    artistID = getArtistID(name, userToken)
+    artistID = spotFunc.getArtistID(name, userToken)
 
-    getArtistsSongs(artistID, userToken, name)
+    spotFunc.getArtistsSongs(artistID, userToken, name)
 
 
 @app.api_route("/api/load/bestSongs", methods=["POST"])
@@ -168,7 +58,7 @@ async def loadBestSongs(request: Request):
     data = await request.json()
     userToken = data["token"]
 
-    artistTrueName = await getArtist(data["artistName"], userToken)
+    artistTrueName = await spotFunc.getArtist(data["artistName"], userToken)
 
     if artistTrueName[0] == None:
         return JSONResponse(artistTrueName[1])
@@ -182,7 +72,7 @@ async def loadBestSongs(request: Request):
 async def searchArtist(request: Request):
     data = await request.json()
 
-    artistName = await getArtist(data["artistName"], data["token"])
+    artistName = await spotFunc.getArtist(data["artistName"], data["token"])
 
     t = threading.Thread(target=handleArtistsCache, args=(artistName[0], data["token"]))
     t.start()
@@ -214,16 +104,27 @@ async def vote(data: Request):
     
     justName = [song for song in allSongs.keys()]
     
-    correctSong = findClosestWord(data["songName"], justName)
+    correctSong = genFunc.findClosestWord(data["songName"], justName)
     
     dataBase.addSongScore(
         data["artistName"], correctSong, allSongs[correctSong]
     )
 
+
 @app.api_route("/", methods=["GET"])
 async def gen():
     await dataBase.addSongScore("NF","HOPE","https://open.spotify.com/track/0EgLxY52mpGsXETyEsgVlP")
+    dataBase.printSongs()
+    print(time.time())
     return 200
+
+
+@app.api_route("/api/get/artistsvotes", methods=["POST"])
+async def retrieveVotes(data: Request):
+    data = await data.json()
+    keys = apikeys.apiKeys
+    if data["apiKey"] in keys:
+        print("you have a key")
 
 
 if __name__ == "__main__":
