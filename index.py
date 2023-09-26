@@ -1,9 +1,9 @@
-
 import htppRequest
 import scripts.dataBase as dataBase
 import apikeys
-import scripts.spotifyFunctions as spotFunc 
+import scripts.spotifyFunctions as spotFunc
 import scripts.genFunctions as genFunc
+import scripts.cacheUpdating as cache
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -46,11 +46,18 @@ with open("searchArtistsCache.json", "r") as read_file:
     searchArtistCache = json.load(read_file)
 
 
-
 def handleArtistsCache(name, userToken):
-    artistID = spotFunc.getArtistID(name, userToken)
+    cache.artistSearched(name, userToken)
 
-    spotFunc.getArtistsSongs(artistID, userToken, name)
+
+@app.api_route("/", methods=["GET"])
+async def gen():
+    await dataBase.addSongScore(
+        "NF", "HOPE", "https://open.spotify.com/track/0EgLxY52mpGsXETyEsgVlP"
+    )
+    dataBase.printSongs()
+    print(time.time())
+    return 200
 
 
 @app.api_route("/api/load/bestSongs", methods=["POST"])
@@ -98,25 +105,14 @@ async def createToken():
 async def vote(data: Request):
     data = await data.json()
     if data["artistName"] not in searchArtistCache:
-        print(data["artistName"])
-        return JSONResponse("",status_code=400)
+        return JSONResponse("", status_code=400)
     allSongs = searchArtistCache[data["artistName"]]
-    
+
     justName = [song for song in allSongs.keys()]
-    
+
     correctSong = genFunc.findClosestWord(data["songName"], justName)
-    
-    dataBase.addSongScore(
-        data["artistName"], correctSong, allSongs[correctSong]
-    )
 
-
-@app.api_route("/", methods=["GET"])
-async def gen():
-    await dataBase.addSongScore("NF","HOPE","https://open.spotify.com/track/0EgLxY52mpGsXETyEsgVlP")
-    dataBase.printSongs()
-    print(time.time())
-    return 200
+    dataBase.addSongScore(data["artistName"], correctSong, allSongs[correctSong])
 
 
 @app.api_route("/api/get/artistsvotes", methods=["POST"])
@@ -125,6 +121,21 @@ async def retrieveVotes(data: Request):
     keys = apikeys.apiKeys
     if data["apiKey"] in keys:
         print("you have a key")
+
+
+@app.api_route("/api/post/vote/similarity", methods=["POST"])
+async def similarityVote(data: Request):
+    data = await data.json()
+    userToken = data["token"]
+    artistName = data["artistName"]
+    votedArtistFalse = data["votedArtist"]
+
+    votedArtistName = await spotFunc.getArtist(votedArtistFalse, userToken)
+    
+    dataBase.storeVoteSimilarity(artistName, votedArtistName[0])
+
+
+
 
 
 if __name__ == "__main__":

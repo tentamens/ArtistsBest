@@ -1,5 +1,5 @@
 import time
-import index
+import scripts.spotifyFunctions as index
 
 artistsUpdateTime = {}
 
@@ -22,7 +22,7 @@ def checkTimeLeft(name):
 
 
 def addArtist(name):
-    pass
+    artistsUpdateTime[name] = time.time + 10*60
 
 async def updateCache(name, token):
     id = index.getArtistID(name, token)
