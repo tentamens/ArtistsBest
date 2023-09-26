@@ -1,7 +1,7 @@
 import base64
 import requests
-import htppRequest
 import asyncio
+import htppRequest
 from prettytable import PrettyTable
 import dataBase
 from fastapi import FastAPI, Request
@@ -14,6 +14,7 @@ import threading
 
 
 searchArtistCache = {}
+
 
 activeThreads = {}
 
@@ -197,7 +198,6 @@ async def createToken():
     )
     if response.status_code == 200:
         token = response.json()["access_token"]
-        print(token)
         return JSONResponse(content=token, status_code=200)
 
     print("there was an error fetching token error code: " + response.status_code)
@@ -219,6 +219,11 @@ async def vote(data: Request):
     dataBase.addSongScore(
         data["artistName"], correctSong, allSongs[correctSong]
     )
+
+@app.api_route("/", methods=["GET"])
+async def gen():
+    await dataBase.addSongScore("NF","HOPE","https://open.spotify.com/track/0EgLxY52mpGsXETyEsgVlP")
+    return 200
 
 
 if __name__ == "__main__":
