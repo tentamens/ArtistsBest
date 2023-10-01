@@ -3,6 +3,8 @@ import requests
 import scripts.genFunctions as genFunc
 import json
 import index as index
+import aiohttp
+
 
 async def getArtistSongs(inputName, inputSong, userToken):
     headers = {"Authorization": f"Bearer {userToken}"}
@@ -34,27 +36,27 @@ async def getArtistSongs(inputName, inputSong, userToken):
 async def getArtist(inputName, userToken):
     headers = {"Authorization": f"Bearer {userToken}"}
     params = {"q": inputName, "type": "artist"}
-    response = requests.get(
-        "https://api.spotify.com/v1/search", headers=headers, params=params
-    )
 
-    if response.status_code != 200:
-        print(
-            f"there was an error fetching the data error code get artist {response.status_code}"
-        )
-        return [None, response.status_code]
+    async with aiohttp.ClientSession() as session:
+        async with session.get("https://api.spotify.com/v1/search", headers=headers, params=params) as response:
+            if response.status != 200:
+                print(
+                    f"there was an error fetching the data error code get artist {response.status}"
+                )
+                return [None, response.status]
 
-    artists = response.json()["artists"]["items"]
-    artistAndSongs = [
-        {"name": artist["name"], "url": artist["external_urls"]["spotify"]}
-        for artist in artists
-    ]
+            data = await response.json()
+            artists = data["artists"]["items"]
+            artistAndSongs = [
+                {"name": artist["name"], "url": artist["external_urls"]["spotify"]}
+                for artist in artists
+            ]
 
-    justArtists = [{"name": artist["name"]} for artist in artistAndSongs]
-    closedOutput = genFunc.find_closest_word(inputName, justArtists)
-    output = [item for item in artistAndSongs if item["name"] == closedOutput]
+            justArtists = [{"name": artist["name"]} for artist in artistAndSongs]
+            closedOutput = genFunc.find_closest_word(inputName, justArtists)
+            output = [item for item in artistAndSongs if item["name"] == closedOutput]
 
-    return [output[0]["name"], output[0]["url"]]
+            return [output[0]["name"], output[0]["url"]]
 
 
 def getArtistID(inputName, userToken):
@@ -94,7 +96,22 @@ def getArtistsSongs(inputID, userToken, name):
     index.searchArtistCache[name] = entry
     with open("searchArtistsCache.json", "w") as write_file:
         json.dump(index.searchArtistCache, write_file)
+    return
 
+def createPlaylist(userToken, name, description):
+    
+    headers = {
+        "Authorization": f"Bearer {userToken}",
+        "Content-Type": "application/json",
+    }
+    data = json.dumps({"name": name, "description": description})
 
+    response = requests.post(
+        "https://api.spotify.com/v1/users/03l6hosv3bjp1uk8kjk9ov4gf/playlists",
+        headers=headers,
+        data=data,
+    )
+    print(response.json())
+    return
 
 

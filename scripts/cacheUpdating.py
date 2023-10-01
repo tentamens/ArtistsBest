@@ -5,7 +5,7 @@ artistsUpdateTime = {}
 
 
 def artistSearched(name, token):
-
+    print(artistsUpdateTime)
     if name in artistsUpdateTime:
         checkTimeLeft(name, token)
 
@@ -14,15 +14,18 @@ def artistSearched(name, token):
 
 
 def checkTimeLeft(name):
+    print("world")
     if artistsUpdateTime[name] < time.time():
         return
-    
-    artistsUpdateTime[name] = time.time() + 10*60
+    times = time.time()
+    artistsUpdateTime[name] = times + 10*60
     updateCache(name)
 
 
 def addArtist(name):
-    artistsUpdateTime[name] = time.time + 10*60
+    print("hello")
+    times = time.time()
+    artistsUpdateTime[name] = times + 10*60
 
 async def updateCache(name, token):
     id = index.getArtistID(name, token)

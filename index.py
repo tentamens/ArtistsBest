@@ -8,12 +8,16 @@ import scripts.cacheUpdating as cache
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import RedirectResponse
 
 import Levenshtein
 import json
 import threading
 import time
 import requests
+import string
+import random
+import base64
 
 
 searchArtistCache = {}
@@ -26,12 +30,8 @@ app = FastAPI()
 client_id = "92a2dede3a44403ab62b7b38138c861b"
 client_secret = "4951963c88db452da9c28003372b218e"
 
-origins = [
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
-    "https://localhost:5500",
-    "https://127.0.0.1:5500",
-]
+origins = ["*"]
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,12 +52,79 @@ def handleArtistsCache(name, userToken):
 
 @app.api_route("/", methods=["GET"])
 async def gen():
-    await dataBase.addSongScore(
-        "NF", "HOPE", "https://open.spotify.com/track/0EgLxY52mpGsXETyEsgVlP"
+    spotFunc.createPlaylist(
+        "BQBKSB5njDXM4Ej8FfH-tdIm07-r3kLIAAaIHAnVcyHnWIioFiz1xMqgKOH_yHf7HCHCQHQPUs6OuYNUYWduPmlr300KNKCE2QKSK4re6Bwx6K4Aj7KxHVt-PQi9bExHnz8gmEB_4Du2UENB53ost-qxQwVMLj080OQ71j_y5bLLfcA_UirKIANnRvCj3Q2q-x6V1icXvw93p1vnAfot7XPhNwihXtw096g2286I",
+        "NF best",
+        "the best songs from NF voted on by real people",
     )
-    dataBase.printSongs()
-    print(time.time())
     return 200
+
+
+
+
+@app.api_route("/test/update")
+def update():
+    refresh_token = "BQBKSB5njDXM4Ej8FfH-tdIm07-r3kLIAAaIHAnVcyHnWIioFiz1xMqgKOH_yHf7HCHCQHQPUs6OuYNUYWduPmlr300KNKCE2QKSK4re6Bwx6K4Aj7KxHVt-PQi9bExHnz8gmEB_4Du2UENB53ost-qxQwVMLj080OQ71j_y5bLLfcA_UirKIANnRvCj3Q2q-x6V1icXvw93p1vnAfot7XPhNwihXtw096g2286I"
+    auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+
+    authOptions = {
+        "url": "https://accounts.spotify.com/api/token",
+        "headers": {"Authorization": f"Basic {auth_header}"},
+        "data": {"grant_type": "refresh_token", "refresh_token": refresh_token},
+    }
+
+    response = requests.post(**authOptions)
+    print(response.json())
+    if response.status_code == 200:
+        access_token = response.json()["access_token"]
+        print(response.json())
+
+
+@app.get("/callback")
+def callback(request: Request):
+    return 200
+    redirect_uri = "http://localhost:8000/callback"
+    global code
+    global state
+    code = request.query_params.get("code")
+    state = request.query_params.get("state")
+    print(code)
+    if state is None:
+        return RedirectResponse(
+            "/#" + requests.compat.urlencode({"error": "state_mismatch"})
+        )
+    else:
+        auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        authOptions = {
+            "url": "https://accounts.spotify.com/api/token",
+            "data": {
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code",
+            },
+            "headers": {"Authorization": f"Basic {auth_header}"},
+        }
+        response = requests.post(**authOptions)
+        print(response.json())
+        return response.json()
+
+
+@app.api_route("/login")
+def login():
+    return 200
+    redirect_uri = "http://localhost:8000/callback"
+
+    state = "".join(random.choices(string.ascii_uppercase + string.digits, k=16))
+    scope = "playlist-modify-public user-read-email"
+    params = {
+        "response_type": "code",
+        "client_id": htppRequest.client_id,
+        "scope": scope,
+        "redirect_uri": redirect_uri,
+        "state": state,
+    }
+    url = "https://accounts.spotify.com/authorize?" + requests.compat.urlencode(params)
+    return RedirectResponse(url)
 
 
 @app.api_route("/api/load/bestSongs", methods=["POST"])
@@ -70,7 +137,9 @@ async def loadBestSongs(request: Request):
     if artistTrueName[0] == None:
         return JSONResponse(artistTrueName[1])
 
-    result = dataBase.searchArtist(artistTrueName[0])
+    result = await dataBase.searchArtist(artistTrueName[0])
+
+    result = json.dumps(result)
 
     return JSONResponse(content=result, status_code=200)
 
@@ -112,7 +181,7 @@ async def vote(data: Request):
 
     correctSong = genFunc.findClosestWord(data["songName"], justName)
 
-    dataBase.addSongScore(data["artistName"], correctSong, allSongs[correctSong])
+    await dataBase.addSongScore(data["artistName"], correctSong, allSongs[correctSong])
 
 
 @app.api_route("/api/get/artistsvotes", methods=["POST"])
@@ -131,11 +200,8 @@ async def similarityVote(data: Request):
     votedArtistFalse = data["votedArtist"]
 
     votedArtistName = await spotFunc.getArtist(votedArtistFalse, userToken)
-    
+
     dataBase.storeVoteSimilarity(artistName, votedArtistName[0])
-
-
-
 
 
 if __name__ == "__main__":

@@ -55,13 +55,14 @@ def printSongs():
 
 
 async def searchArtist(name):
-    result_set = c.execute(f"SELECT * FROM artists WHERE artist='{name}'")
+    result_set = c.execute(f"SELECT artist, song, link FROM artists WHERE artist='{name}'")
     rows = result_set.rows
-
+    
+    
     result = [rows[i] for i in range(min(6, len(rows)))]
-    result = json.dumps(result)
-    # result = tuple(map(tuple, result))
-
+    print(result)
+    result  = [tuple(row) for row in result]
+    print(result)
     return result
 
 
