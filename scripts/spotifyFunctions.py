@@ -111,7 +111,7 @@ def createPlaylist(userToken, name, description):
         headers=headers,
         data=data,
     )
-    print(response.json())
-    return
+
+    return response.json()["id"]
 
 

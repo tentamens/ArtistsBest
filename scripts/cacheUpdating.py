@@ -14,6 +14,8 @@ def artistSearched(name, token):
 
 
 def checkTimeLeft(name):
+    global artistsUpdateTime
+    
     print("world")
     if artistsUpdateTime[name] < time.time():
         return
@@ -23,6 +25,8 @@ def checkTimeLeft(name):
 
 
 def addArtist(name):
+    global artistsUpdateTime
+
     print("hello")
     times = time.time()
     artistsUpdateTime[name] = times + 10*60

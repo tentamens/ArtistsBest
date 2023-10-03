@@ -4,6 +4,8 @@ import apikeys
 import scripts.spotifyFunctions as spotFunc
 import scripts.genFunctions as genFunc
 import scripts.cacheUpdating as cache
+import scripts.playlistcreation as playlistcreation
+
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -42,8 +44,12 @@ app.add_middleware(
 )
 
 
+
+
 with open("searchArtistsCache.json", "r") as read_file:
     searchArtistCache = json.load(read_file)
+
+
 
 
 def handleArtistsCache(name, userToken):
@@ -52,11 +58,8 @@ def handleArtistsCache(name, userToken):
 
 @app.api_route("/", methods=["GET"])
 async def gen():
-    spotFunc.createPlaylist(
-        "BQBKSB5njDXM4Ej8FfH-tdIm07-r3kLIAAaIHAnVcyHnWIioFiz1xMqgKOH_yHf7HCHCQHQPUs6OuYNUYWduPmlr300KNKCE2QKSK4re6Bwx6K4Aj7KxHVt-PQi9bExHnz8gmEB_4Du2UENB53ost-qxQwVMLj080OQ71j_y5bLLfcA_UirKIANnRvCj3Q2q-x6V1icXvw93p1vnAfot7XPhNwihXtw096g2286I",
-        "NF best",
-        "the best songs from NF voted on by real people",
-    )
+    playlistcreation.refreshToken()
+    await playlistcreation.updatePlaylist("NF")
     return 200
 
 

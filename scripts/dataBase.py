@@ -13,7 +13,7 @@ c = libsql_client.create_client_sync(
 c.execute(
     "CREATE TABLE IF NOT EXISTS artists (artist TEXT, song TEXT, votes INTEGER, link TEXT)"
 )
-
+c.execute("CREATE INDEX IF NOT EXISTS votes_index ON artists(votes)")
 
 async def addSongScore(artist, song, link):
     returnResult = c.execute(f"SELECT * FROM artists WHERE artist='{artist}'")
@@ -55,14 +55,10 @@ def printSongs():
 
 
 async def searchArtist(name):
-    result_set = c.execute(f"SELECT artist, song, link FROM artists WHERE artist='{name}'")
+    result_set = c.execute(f"SELECT artist, song, link FROM artists WHERE artist='{name}' ORDER BY votes DESC LIMIT 6")
     rows = result_set.rows
     
-    
-    result = [rows[i] for i in range(min(6, len(rows)))]
-    print(result)
-    result  = [tuple(row) for row in result]
-    print(result)
+    result  = [tuple(row) for row in rows]
     return result
 
 
@@ -98,3 +94,6 @@ def storeVoteSimilarity(artistName, votedArtistName):
         f"INSERT into artistVoteSim (name, votedName, score) VALUES",
         (f"{artistName}", f"{votedArtistName}", 1),
     )
+
+
+
