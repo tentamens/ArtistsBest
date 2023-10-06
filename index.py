@@ -12,10 +12,8 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 
-import Levenshtein
 import json
 import threading
-import time
 import requests
 import string
 import random
@@ -44,12 +42,8 @@ app.add_middleware(
 )
 
 
-
-
 with open("searchArtistsCache.json", "r") as read_file:
     searchArtistCache = json.load(read_file)
-
-
 
 
 def handleArtistsCache(name, userToken):
@@ -59,10 +53,8 @@ def handleArtistsCache(name, userToken):
 @app.api_route("/", methods=["GET"])
 async def gen():
     playlistcreation.refreshToken()
-    await playlistcreation.updatePlaylist("NF")
-    return 200
-
-
+    data = await playlistcreation.getPlaylist("NF")
+    return JSONResponse(status_code=200, content=data)
 
 
 @app.api_route("/test/update")
@@ -79,7 +71,6 @@ def update():
     response = requests.post(**authOptions)
     print(response.json())
     if response.status_code == 200:
-        access_token = response.json()["access_token"]
         print(response.json())
 
 
@@ -137,10 +128,10 @@ async def loadBestSongs(request: Request):
 
     artistTrueName = await spotFunc.getArtist(data["artistName"], userToken)
 
-    if artistTrueName[0] == None:
+    if artistTrueName[0] is None:
         return JSONResponse(artistTrueName[1])
 
-    result = await dataBase.searchArtist(artistTrueName[0])
+    result = dataBase.searchArtist(artistTrueName[0])
 
     result = json.dumps(result)
 
@@ -169,8 +160,11 @@ async def createToken():
         token = response.json()["access_token"]
         return JSONResponse(content=token, status_code=200)
 
-    print("there was an error fetching token error code: " + response.status_code)
-    return JSONResponse(status_code=400)
+    print(
+        "there was an error fetching token error code: "
+        + response.status_code)
+
+    return JSONResponse(status_code=400, content="")
 
 
 @app.api_route("/api/post/vote", methods=["POST"])
@@ -184,7 +178,7 @@ async def vote(data: Request):
 
     correctSong = genFunc.findClosestWord(data["songName"], justName)
 
-    await dataBase.addSongScore(data["artistName"], correctSong, allSongs[correctSong])
+    await dataBase.addSongScore(data["artistName"], correctSong, allSongs[corresctSong])
 
 
 @app.api_route("/api/get/artistsvotes", methods=["POST"])

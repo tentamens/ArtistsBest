@@ -54,7 +54,7 @@ def printSongs():
         pass
 
 
-async def searchArtist(name):
+def searchArtist(name):
     result_set = c.execute(f"SELECT artist, song, link FROM artists WHERE artist='{name}' ORDER BY votes DESC LIMIT 6")
     rows = result_set.rows
     
