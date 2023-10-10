@@ -3,6 +3,7 @@ import json
 import libsql_client
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 
@@ -94,6 +95,47 @@ def storeVoteSimilarity(artistName, votedArtistName):
         f"INSERT into artistVoteSim (name, votedName, score) VALUES",
         (f"{artistName}", f"{votedArtistName}", 1),
     )
+    return
+
+
+def loadVoteSimilarity(name):
+    c.execute(f"CREATE TABLE IF NOT EXISTS artistVoteSim (name text, votedName text, score integer)")
+    returnResult = c.execute(f"SELECT votedName FROM artistVoteSim WHERE name='{name}' ORDER BY score DESC LIMIT 3")
+    rows = returnResult.rows
+
+    result  = [tuple(row) for row in rows]
+    return result
+
+
+def storePlaylists(name, id):
+    print(name)
+    print(id)
+    
+    c.execute("CREATE TABLE IF NOT EXISTS playlists (name text, id text)")
+
+    returnResult = c.execute("SELECT * FROM playlists WHERE name=?", (name,))
+    result = returnResult.rows
+
+    if result:
+        c.execute("UPDATE playlists SET id=? WHERE name=?", (id, name))
+        return
+
+    c.execute("INSERT into playlists (name, id) VALUES (?, ?)", (name, id))
+
+
+def loadPlaylists():
+    c.execute(f"CREATE TABLE IF NOT EXISTS playlists (name text, id text)")
+    returnResult = c.execute(f"SELECT * FROM playlists")
+
+
+    result = returnResult.rows
+    result  = [tuple(row) for row in result]
+    trueResult = {}
+    for row in result:
+        trueResult[row[0]] = [row[1], time.time()]
+        pass
+
+    return trueResult
 
 
 

@@ -54,6 +54,7 @@ def handleArtistsCache(name, userToken):
 async def gen():
     playlistcreation.refreshToken()
     data = await playlistcreation.getPlaylist("NF")
+    print(data[0])
     return JSONResponse(status_code=200, content=data)
 
 
@@ -69,7 +70,7 @@ def update():
     }
 
     response = requests.post(**authOptions)
-    print(response.json())
+
     if response.status_code == 200:
         print(response.json())
 
@@ -131,9 +132,14 @@ async def loadBestSongs(request: Request):
     if artistTrueName[0] is None:
         return JSONResponse(artistTrueName[1])
 
-    result = dataBase.searchArtist(artistTrueName[0])
+    playlist = await playlistcreation.getPlaylist(artistTrueName[0])
 
+    dataBase.loadVoteSimilarity(artistTrueName[0])
+
+    result = dataBase.searchArtist(artistTrueName[0])
+    result = {"songs": result, "playlist": playlist[0]}
     result = json.dumps(result)
+    print(result)
 
     return JSONResponse(content=result, status_code=200)
 

@@ -17,7 +17,7 @@ client_id = "92a2dede3a44403ab62b7b38138c861b"
 client_secret = "4951963c88db452da9c28003372b218e"
 
 # name of the artists: [id, checkTime]
-createdPlaylists = {}
+createdPlaylists = db.loadPlaylists()
 
 accessTokenExpire = None
 
@@ -92,6 +92,8 @@ async def createPlaylist(name):
 
     t = time.time()
     createdPlaylists[name] = [id, t + 5*60]
+    db.storePlaylists(name, id)
+    
     return createdPlaylists[name]
 
 
