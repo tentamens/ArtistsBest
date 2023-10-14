@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import base64
 import requests
-import time 
+import time
 import scripts.spotifyFunctions as spotFunc
 import scripts.dataBase as db
 import json
@@ -21,6 +21,7 @@ createdPlaylists = db.loadPlaylists()
 
 accessTokenExpire = None
 
+print(createdPlaylists)
 
 async def getPlaylist(name):
     if name in createdPlaylists:
@@ -44,28 +45,30 @@ def playlistCreated(name):
 def refreshToken():
     global refresh_token
     refresh_token = refresh_token
-    auth_header = base64.b64encode(
-        f"{client_id}:{client_secret}".encode()).decode()
+    auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
     authOptions = {
         "url": "https://accounts.spotify.com/api/token",
         "headers": {"Authorization": f"Basic {auth_header}"},
-        "data": {"grant_type": "refresh_token", "refresh_token":
-                 os.getenv("SPOTIFY_REFRESH_ACCESS_TOKEN")},
+        "data": {
+            "grant_type": "refresh_token",
+            "refresh_token": os.getenv("SPOTIFY_REFRESH_ACCESS_TOKEN"),
+        },
     }
 
     response = requests.post(**authOptions)
-    print(response.status_code)
+
     if response.status_code == 200:
         global access_token
         global accessTokenExpire
 
         access_token = response.json()["access_token"]
         accessTokenExpire = time.time() + response.json()["expires_in"]
+        return access_token
 
+refreshToken()
 
 async def createPlaylist(name):
-
     id = spotFunc.createPlaylist(
         access_token,
         f"{name} Best Songs",
@@ -74,26 +77,29 @@ async def createPlaylist(name):
 
     headers = {
         "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
     songs = db.searchArtist(name)
+    print(songs)
     songsLinks = []
     for i in range(len(songs)):
         this = songs[i][2]
         that = this[31:]
         songsLinks.append("spotify:track:" + that)
 
-    data = {
-        "uris": songsLinks
-    }
+    data = {"uris": songsLinks}
 
-    requests.post(f"https://api.spotify.com/v1/playlists/{id}/tracks", data=json.dumps(data), headers=headers)
+    requests.post(
+        f"https://api.spotify.com/v1/playlists/{id}/tracks",
+        data=json.dumps(data),
+        headers=headers,
+    )
 
     t = time.time()
-    createdPlaylists[name] = [id, t + 5*60]
+    createdPlaylists[name] = [id, t + 5 * 60]
     db.storePlaylists(name, id)
-    
+
     return createdPlaylists[name]
 
 
@@ -107,14 +113,18 @@ def checkPlaylistCreation(name):
 
 
 def updatePlaylist(name, id):
+    print(id)
     headers = {
         "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
     CurrentHighestVotedSongs = db.searchArtist(name)
 
-    playlistSongs = requests.get(f"https://api.spotify.com/v1/playlists/{id}/tracks", headers=headers)
+    playlistSongs = requests.get(
+        f"https://api.spotify.com/v1/playlists/{id}/tracks", headers=headers
+    )
+
     playlistSongs = playlistSongs.json()["items"]
 
     # {uri: "spotify:track:"}
@@ -125,7 +135,7 @@ def updatePlaylist(name, id):
 
     for i in playlistSongs:
         name = i["track"]["name"]
-  
+
         result = checkForSongInResponse(name, CurrentHighestVotedSongs)
 
         if result is not None:
@@ -140,13 +150,12 @@ def updatePlaylist(name, id):
     addSongsUrls = []
 
     for i, item in enumerate(SongsThatAreOnTheList):
-
         if SongsThatAreOnTheList[i] not in CurrentHighestVotedSongs[i]:
             addSongsUrls.append("spotify:track:" + CurrentHighestVotedSongs[i][2][31:])
 
     data = {"tracks": removeSongUrls}
 
-    deleteSongsUrl(data, id)    
+    deleteSongsUrl(data, id)
 
     datas = {"uris": addSongsUrls}
 
@@ -163,7 +172,10 @@ def getRemoveSongs(songs, song):
     return removeSongs
 
 
-def checkForSongInResponse(name, songs,):
+def checkForSongInResponse(
+    name,
+    songs,
+):
     song = None
     for i in songs:
         if i[1] == name:
@@ -176,10 +188,14 @@ def checkForSongInResponse(name, songs,):
 def addSongsRequest(data, id):
     headers = {
         "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
-    }    
+        "Content-Type": "application/json",
+    }
 
-    response = requests.post(f"https://api.spotify.com/v1/playlists/{id}/tracks", data=json.dumps(data), headers=headers)
+    response = requests.post(
+        f"https://api.spotify.com/v1/playlists/{id}/tracks",
+        data=json.dumps(data),
+        headers=headers,
+    )
     print(response.json())
     return
 
@@ -187,9 +203,13 @@ def addSongsRequest(data, id):
 def deleteSongsUrl(data, id):
     headers = {
         "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
-    response = requests.delete(f"https://api.spotify.com/v1/playlists/{id}/tracks", data=json.dumps(data), headers=headers)
+    response = requests.delete(
+        f"https://api.spotify.com/v1/playlists/{id}/tracks",
+        data=json.dumps(data),
+        headers=headers,
+    )
     print(response.json())
     return

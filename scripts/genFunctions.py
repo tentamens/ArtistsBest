@@ -1,4 +1,4 @@
-
+import requests
 import Levenshtein
 
 def find_closest_word(input_str, word_list):
@@ -21,3 +21,17 @@ def findClosestWord(inputStr, wordList):
             closest_word = word
             min_distance = distance
     return closest_word
+
+
+def make_request(url, headers, data, whereCalledFrom):
+    response = None
+    try:
+        response = requests.post(url, headers=headers, data=data)
+        response.raise_for_status()
+        return response
+    except requests.exceptions.RequestException as err:
+        print(f"An error occurred: {err} \n called from {whereCalledFrom}")
+        
+        return ["error", response.json()]
+
+

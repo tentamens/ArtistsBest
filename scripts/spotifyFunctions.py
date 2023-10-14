@@ -1,9 +1,9 @@
-
 import requests
 import scripts.genFunctions as genFunc
 import json
 import index as index
 import aiohttp
+import scripts.playlistcreation as playlistcreation
 
 
 async def getArtistSongs(inputName, inputSong, userToken):
@@ -24,7 +24,7 @@ async def getArtistSongs(inputName, inputSong, userToken):
         {"name": track["name"], "url": track["external_urls"]["spotify"]}
         for track in tracks
     ]
-    
+
     justArtists = [{"name": artist["name"]} for artist in songs_and_links]
     inputnameMatch = genFunc.find_closest_word(inputSong, justArtists)
 
@@ -37,26 +37,28 @@ async def getArtist(inputName, userToken):
     headers = {"Authorization": f"Bearer {userToken}"}
     params = {"q": inputName, "type": "artist"}
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://api.spotify.com/v1/search", headers=headers, params=params) as response:
-            if response.status != 200:
-                print(
-                    f"there was an error fetching the data error code get artist {response.status}"
-                )
-                return [None, response.status]
+    response = requests.get(
+        "https://api.spotify.com/v1/search", headers=headers, params=params
+    )
 
-            data = await response.json()
-            artists = data["artists"]["items"]
-            artistAndSongs = [
-                {"name": artist["name"], "url": artist["external_urls"]["spotify"]}
-                for artist in artists
-            ]
+    if response.status_code != 200:
+        print(
+            f"there was an error fetching the data error code get artist {response.status_code}"
+        )
+        return [None, response.status_code]
 
-            justArtists = [{"name": artist["name"]} for artist in artistAndSongs]
-            closedOutput = genFunc.find_closest_word(inputName, justArtists)
-            output = [item for item in artistAndSongs if item["name"] == closedOutput]
+    data = response.json()
+    artists = data["artists"]["items"]
+    artistAndSongs = [
+        {"name": artist["name"], "url": artist["external_urls"]["spotify"]}
+        for artist in artists
+    ]
 
-            return [output[0]["name"], output[0]["url"]]
+    justArtists = [{"name": artist["name"]} for artist in artistAndSongs]
+    closedOutput = genFunc.find_closest_word(inputName, justArtists)
+    output = [item for item in artistAndSongs if item["name"] == closedOutput]
+
+    return [output[0]["name"], output[0]["url"]]
 
 
 def getArtistID(inputName, userToken):
@@ -77,41 +79,60 @@ def getArtistID(inputName, userToken):
 
 
 def getArtistsSongs(inputID, userToken, name):
-    if name in index.searchArtistCache:
-        print("hello world")
-        return
-
+    params = {
+        "include_groups": "album,single,appears_on,compilation",
+        "limit": 50,  # Maximum limit
+    }
     headers = {"Authorization": f"Bearer {userToken}"}
     albums_url = f"https://api.spotify.com/v1/artists/{inputID}/albums"
-    albums_response = requests.get(albums_url, headers=headers)
+    albums_response = requests.get(albums_url, headers=headers, params=params)
     albums_response = albums_response.json()
 
     albumID = [i["id"] for i in albums_response["items"]]
-    entry = {
-        i["name"]: i["external_urls"]["spotify"]
-        for response in albumID
-        for i in response["items"]
-    }
+
+    entry = {}
+    for album_id in albumID:
+        url = f"https://api.spotify.com/v1/albums/{album_id}/tracks"
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            tracks = response.json()["items"]
+
+            for track in tracks:
+                entry[track["name"]] = track["external_urls"]["spotify"]
+            continue
+
+        print(
+            f"there was an error fetching the data error code get artists songs {response.status_code}"
+        )
 
     index.searchArtistCache[name] = entry
     with open("searchArtistsCache.json", "w") as write_file:
         json.dump(index.searchArtistCache, write_file)
     return
 
+
 def createPlaylist(userToken, name, description):
-    
     headers = {
         "Authorization": f"Bearer {userToken}",
         "Content-Type": "application/json",
     }
+
     data = json.dumps({"name": name, "description": description})
 
-    response = requests.post(
+    response = genFunc.make_request(
         "https://api.spotify.com/v1/users/03l6hosv3bjp1uk8kjk9ov4gf/playlists",
-        headers=headers,
-        data=data,
+        headers,
+        data,
+        whereCalledFrom="createdPlaylist line 115 spotifyFunctions.py"
     )
 
+    if type(response) == list:
+        error = response[1]["error"]
+        if error["status"] == 401:
+            print("world")
+            token = playlistcreation.refreshToken()
+            createPlaylist(token, name, description)
+        return
+    print(response.json()["id"])
     return response.json()["id"]
-
-

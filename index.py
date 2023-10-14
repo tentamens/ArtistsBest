@@ -7,6 +7,7 @@ import scripts.cacheUpdating as cache
 import scripts.playlistcreation as playlistcreation
 
 
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,6 +48,8 @@ with open("searchArtistsCache.json", "r") as read_file:
 
 
 def handleArtistsCache(name, userToken):
+    print("THIS IS IN HANDLE CACHE " + str(name))
+
     cache.artistSearched(name, userToken)
 
 
@@ -130,16 +133,16 @@ async def loadBestSongs(request: Request):
     artistTrueName = await spotFunc.getArtist(data["artistName"], userToken)
 
     if artistTrueName[0] is None:
+        print("this is a if statement in bestsongs HOW DO THIS HAPPEN")
         return JSONResponse(artistTrueName[1])
 
     playlist = await playlistcreation.getPlaylist(artistTrueName[0])
 
-    dataBase.loadVoteSimilarity(artistTrueName[0])
-
+    voteSimilarity = dataBase.loadVoteSimilarity(artistTrueName[0])
+    
     result = dataBase.searchArtist(artistTrueName[0])
-    result = {"songs": result, "playlist": playlist[0]}
+    result = {"songs": result, "playlist": playlist[0], "similartyVotes": voteSimilarity}
     result = json.dumps(result)
-    print(result)
 
     return JSONResponse(content=result, status_code=200)
 
@@ -184,7 +187,7 @@ async def vote(data: Request):
 
     correctSong = genFunc.findClosestWord(data["songName"], justName)
 
-    await dataBase.addSongScore(data["artistName"], correctSong, allSongs[corresctSong])
+    await dataBase.addSongScore(data["artistName"], correctSong, allSongs[correctSong])
 
 
 @app.api_route("/api/get/artistsvotes", methods=["POST"])
@@ -204,7 +207,8 @@ async def similarityVote(data: Request):
 
     votedArtistName = await spotFunc.getArtist(votedArtistFalse, userToken)
 
-    dataBase.storeVoteSimilarity(artistName, votedArtistName[0])
+    dataBase.storeVoteSimilarity(artistName, votedArtistName[0], votedArtistName[1])
+
 
 
 if __name__ == "__main__":

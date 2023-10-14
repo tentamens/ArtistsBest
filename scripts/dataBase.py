@@ -16,6 +16,7 @@ c.execute(
 )
 c.execute("CREATE INDEX IF NOT EXISTS votes_index ON artists(votes)")
 
+
 async def addSongScore(artist, song, link):
     returnResult = c.execute(f"SELECT * FROM artists WHERE artist='{artist}'")
 
@@ -56,10 +57,12 @@ def printSongs():
 
 
 def searchArtist(name):
-    result_set = c.execute(f"SELECT artist, song, link FROM artists WHERE artist='{name}' ORDER BY votes DESC LIMIT 6")
+    result_set = c.execute(
+        f"SELECT artist, song, link FROM artists WHERE artist='{name}' ORDER BY votes DESC LIMIT 6"
+    )
     rows = result_set.rows
-    
-    result  = [tuple(row) for row in rows]
+
+    result = [tuple(row) for row in rows]
     return result
 
 
@@ -70,47 +73,51 @@ def storeArtistSearch():
 def storeArtistSearchs(name):
     c.execute(f"CREATE TABLE IF NOT EXISTS timesSearched (name text, score integer)")
 
-    returnResult = c.execute(f"SELECT * FROM timesSearched WHERE name={name}")
+    returnResult = c.execute(f"SELECT * FROM timesSearched WHERE name='{name}'")
     result = returnResult.rows
 
     if result:
-        c.execute(f"UPDATE timesSearched SET score=score+1 WHERE name={name}")
+        c.execute(f"UPDATE timesSearched SET score=score+1 WHERE name='{name}'")
         return
-    c.execute(f"INSERT into timesSearched (name, song) VALUES", (f"{name}", "1"))
+    c.execute(f"INSERT into timesSearched (name, score) VALUES ('{name}', 1)")
 
 
-def storeVoteSimilarity(artistName, votedArtistName):
+def storeVoteSimilarity(artistName, votedArtistName, link):
     c.execute(
-        f"CREATE TABLE IF NOT EXISTS artistVoteSim (name text, votedName text, score integer)"
+        f"CREATE TABLE IF NOT EXISTS artistVoteSim (name text, votedName text, score integer, link text)"
     )
 
-    returnResult = c.execute(f"SELECT * FROM artistVoteSim WHERE name ={artistName}")
+    returnResult = c.execute(f"SELECT * FROM artistVoteSim WHERE name ='{artistName}'")
     result = returnResult.rows
+    print(result)
 
     if result:
-        c.execute(f"UPDATE artistVoteSim SET score=score+1 WHERE name={artistName}")
+        c.execute(f"UPDATE artistVoteSim SET score=score+1 WHERE name='{artistName}'")
         return
 
     c.execute(
-        f"INSERT into artistVoteSim (name, votedName, score) VALUES",
-        (f"{artistName}", f"{votedArtistName}", 1),
+        f"INSERT into artistVoteSim (name, votedName, score, link) VALUES ('{artistName}', '{votedArtistName}', 1, '{link}')"
     )
     return
 
 
 def loadVoteSimilarity(name):
-    c.execute(f"CREATE TABLE IF NOT EXISTS artistVoteSim (name text, votedName text, score integer)")
-    returnResult = c.execute(f"SELECT votedName FROM artistVoteSim WHERE name='{name}' ORDER BY score DESC LIMIT 3")
+    c.execute(
+        f"CREATE TABLE IF NOT EXISTS artistVoteSim (name text, votedName text, score integer, link text)"
+    )
+    returnResult = c.execute(
+        f"SELECT votedName, link FROM artistVoteSim WHERE name='{name}' ORDER BY score DESC LIMIT 3"
+    )
     rows = returnResult.rows
-
-    result  = [tuple(row) for row in rows]
+    print(rows)
+    result = [tuple(row) for row in rows]
     return result
 
 
 def storePlaylists(name, id):
     print(name)
     print(id)
-    
+
     c.execute("CREATE TABLE IF NOT EXISTS playlists (name text, id text)")
 
     returnResult = c.execute("SELECT * FROM playlists WHERE name=?", (name,))
@@ -122,20 +129,17 @@ def storePlaylists(name, id):
 
     c.execute("INSERT into playlists (name, id) VALUES (?, ?)", (name, id))
 
+c.execute(f"Delete FROM playlists where name='Logic'")
 
 def loadPlaylists():
     c.execute(f"CREATE TABLE IF NOT EXISTS playlists (name text, id text)")
     returnResult = c.execute(f"SELECT * FROM playlists")
 
-
     result = returnResult.rows
-    result  = [tuple(row) for row in result]
+    result = [tuple(row) for row in result]
     trueResult = {}
     for row in result:
         trueResult[row[0]] = [row[1], time.time()]
         pass
 
     return trueResult
-
-
-
