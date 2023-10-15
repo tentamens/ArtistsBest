@@ -130,9 +130,8 @@ def createPlaylist(userToken, name, description):
     if type(response) == list:
         error = response[1]["error"]
         if error["status"] == 401:
-            print("world")
             token = playlistcreation.refreshToken()
-            createPlaylist(token, name, description)
+            return createPlaylist(token, name, description)
         return
-    print(response.json()["id"])
+
     return response.json()["id"]

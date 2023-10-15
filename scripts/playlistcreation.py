@@ -23,6 +23,7 @@ accessTokenExpire = None
 
 print(createdPlaylists)
 
+
 async def getPlaylist(name):
     if name in createdPlaylists:
         t = threading.Thread(target=playlistCreated, args=(name,))
@@ -66,7 +67,7 @@ def refreshToken():
         accessTokenExpire = time.time() + response.json()["expires_in"]
         return access_token
 
-refreshToken()
+
 
 async def createPlaylist(name):
     id = spotFunc.createPlaylist(
@@ -81,7 +82,7 @@ async def createPlaylist(name):
     }
 
     songs = db.searchArtist(name)
-    print(songs)
+    print(str(songs) + " songs ")
     songsLinks = []
     for i in range(len(songs)):
         this = songs[i][2]
