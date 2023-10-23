@@ -1,0 +1,8 @@
+aiohttp==3.8.5
+fastapi==0.103.2
+libsql_client==0.3.0
+python-dotenv==1.0.0
+python_Levenshtein==0.23.0
+Requests==2.31.0
+starlette==0.31.1
+uvicorn==0.23.2

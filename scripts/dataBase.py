@@ -38,7 +38,8 @@ async def addSongScore(artist, song, link):
             )
     else:
         c.execute(
-            f"INSERT INTO artists (artist, song, votes, link) VALUES ('{artist}', '{song}', 1, '{link}')"
+            "INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, ?, ?)",
+            (artist, song, 1, link)
         )
 
 
@@ -129,7 +130,6 @@ def storePlaylists(name, id):
 
     c.execute("INSERT into playlists (name, id) VALUES (?, ?)", (name, id))
 
-c.execute(f"Delete FROM playlists where name='Logic'")
 
 def loadPlaylists():
     c.execute(f"CREATE TABLE IF NOT EXISTS playlists (name text, id text)")

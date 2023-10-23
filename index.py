@@ -179,8 +179,9 @@ async def createToken():
 @app.api_route("/api/post/vote", methods=["POST"])
 async def vote(data: Request):
     data = await data.json()
+    print(data["artistName"])
     if data["artistName"] not in searchArtistCache:
-        return JSONResponse("", status_code=400)
+        return JSONResponse("artist not in cache", status_code=400)
     allSongs = searchArtistCache[data["artistName"]]
 
     justName = [song for song in allSongs.keys()]
@@ -214,4 +215,4 @@ async def similarityVote(data: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=6969)

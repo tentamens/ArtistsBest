@@ -21,7 +21,7 @@ createdPlaylists = db.loadPlaylists()
 
 accessTokenExpire = None
 
-print(createdPlaylists)
+print(createdPlaylists, " hello world")
 
 
 async def getPlaylist(name):
@@ -114,7 +114,7 @@ def checkPlaylistCreation(name):
 
 
 def updatePlaylist(name, id):
-    print(id)
+    print(id, "id in 117 playlistcreation")
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",

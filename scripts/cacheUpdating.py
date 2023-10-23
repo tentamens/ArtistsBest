@@ -8,8 +8,9 @@ def artistSearched(name, token):
     print(artistsUpdateTime)
     if name in artistsUpdateTime:
         checkTimeLeft(name, token)
+        print("artistHasTimeLeft")
         return
-
+    print("adding artist")
     addArtist(name, token)
 
 
