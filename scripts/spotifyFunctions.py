@@ -124,7 +124,7 @@ def createPlaylist(userToken, name, description):
         "https://api.spotify.com/v1/users/03l6hosv3bjp1uk8kjk9ov4gf/playlists",
         headers,
         data,
-        whereCalledFrom="createdPlaylist line 115 spotifyFunctions.py"
+        whereCalledFrom="createdPlaylist line 115 spotifyFunctions.py",
     )
 
     if type(response) == list:
@@ -135,3 +135,30 @@ def createPlaylist(userToken, name, description):
         return
 
     return response.json()["id"]
+
+
+def fetchSong(artistName, name, userToken):
+    headers = {
+        "Authorization": f"Bearer {userToken}",
+    }
+
+    query = f"track:{name} artist:{artistName}"
+    data = {
+        "q": query,
+        "type": "track",
+    }
+
+
+    response = genFunc.makeGetRequest(
+        "https://api.spotify.com/v1/search",
+        headers,
+        data,
+        whereCalledFrom="fetchSong line 140 spotifyFunctions.py",
+    )
+
+    print(response)
+
+    if type(response) == list:
+        return ["error"]
+
+    return response.json()["tracks"]["items"][0]

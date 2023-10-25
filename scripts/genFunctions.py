@@ -35,3 +35,14 @@ def make_request(url, headers, data, whereCalledFrom):
         return ["error", response.json()]
 
 
+def makeGetRequest(url, headers, data, whereCalledFrom):
+    
+    response = None
+    try:
+        response = requests.get(url, headers=headers, params=data)
+        response.raise_for_status()
+        return response
+    except requests.exceptions.RequestException as err:
+        print(f"An error occurred: {err} \n called from {whereCalledFrom}")
+        
+        return ["error", response.json()]

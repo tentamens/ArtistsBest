@@ -19,9 +19,12 @@ import requests
 import string
 import random
 import base64
-
+import logging
 
 searchArtistCache = {}
+
+songCache = {}
+
 
 
 activeThreads = {}
@@ -33,6 +36,8 @@ client_secret = "4951963c88db452da9c28003372b218e"
 
 origins = ["*"]
 
+log = logging.getLogger("uvicorn")
+log.setLevel(logging.ERROR)
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,6 +50,9 @@ app.add_middleware(
 
 with open("searchArtistsCache.json", "r") as read_file:
     searchArtistCache = json.load(read_file)
+
+with open("songCache.json", "r") as read_file:
+    songCache = json.load(read_file)
 
 
 def handleArtistsCache(name, userToken):
@@ -129,20 +137,18 @@ def login():
 async def loadBestSongs(request: Request):
     data = await request.json()
     userToken = data["token"]
+    artistTrueName = data["artistName"]
 
-    artistTrueName = await spotFunc.getArtist(data["artistName"], userToken)
 
-    if artistTrueName[0] is None:
-        print("this is a if statement in bestsongs HOW DO THIS HAPPEN")
-        return JSONResponse(artistTrueName[1])
+    playlist = await playlistcreation.getPlaylist(artistTrueName)
 
-    playlist = await playlistcreation.getPlaylist(artistTrueName[0])
-
-    voteSimilarity = dataBase.loadVoteSimilarity(artistTrueName[0])
+    voteSimilarity = dataBase.loadVoteSimilarity(artistTrueName)
     
-    result = dataBase.searchArtist(artistTrueName[0])
+    result = dataBase.searchArtist(artistTrueName)
     result = {"songs": result, "playlist": playlist[0], "similartyVotes": voteSimilarity}
     result = json.dumps(result)
+
+    print(result)
 
     return JSONResponse(content=result, status_code=200)
 
@@ -153,8 +159,6 @@ async def searchArtist(request: Request):
 
     artistName = await spotFunc.getArtist(data["artistName"], data["token"])
 
-    t = threading.Thread(target=handleArtistsCache, args=(artistName[0], data["token"]))
-    t.start()
 
     return JSONResponse(content=artistName[0], status_code=200)
 
@@ -165,9 +169,10 @@ async def createToken():
     response = requests.post(
         authOptions["url"], headers=authOptions["headers"], data=authOptions["form"]
     )
+    
     if response.status_code == 200:
         token = response.json()["access_token"]
-        return JSONResponse(content=token, status_code=200)
+        return token
 
     print(
         "there was an error fetching token error code: "
@@ -178,17 +183,33 @@ async def createToken():
 
 @app.api_route("/api/post/vote", methods=["POST"])
 async def vote(data: Request):
+    global songCache
     data = await data.json()
-    print(data["artistName"])
-    if data["artistName"] not in searchArtistCache:
-        return JSONResponse("artist not in cache", status_code=400)
-    allSongs = searchArtistCache[data["artistName"]]
+    artistname = data["artistName"]
+    token = data["token"]
+    songName = data["songName"]
 
-    justName = [song for song in allSongs.keys()]
+    return JSONResponse(content="", status_code=400)
 
-    correctSong = genFunc.findClosestWord(data["songName"], justName)
+    if  artistname not in songCache:
+        songCache[artistname] = {}
 
-    await dataBase.addSongScore(data["artistName"], correctSong, allSongs[correctSong])
+    if songName in songCache[artistname]:
+        dataBase.addSongScore(artistname, songName, songCache[artistname][songName])
+
+    result = spotFunc.fetchSong(artistname, songName, token)
+
+    dataBase.addSongScore(artistname, result["name"], result["external_urls"]["spotify"])
+
+    if result["name"] in songCache[artistname]:
+        return
+    
+    songCache[artistname][result["name"]] = result["external_urls"]["spotify"]
+
+    with open("songCache.json", "w") as write_file:
+        json.dump(songCache, write_file)
+
+    
 
 
 @app.api_route("/api/get/artistsvotes", methods=["POST"])
@@ -209,7 +230,6 @@ async def similarityVote(data: Request):
     votedArtistName = await spotFunc.getArtist(votedArtistFalse, userToken)
 
     dataBase.storeVoteSimilarity(artistName, votedArtistName[0], votedArtistName[1])
-
 
 
 if __name__ == "__main__":

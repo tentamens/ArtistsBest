@@ -14,37 +14,43 @@ c = libsql_client.create_client_sync(
 c.execute(
     "CREATE TABLE IF NOT EXISTS artists (artist TEXT, song TEXT, votes INTEGER, link TEXT)"
 )
+
+select = c.execute("SELECT * FROM artists")
+rows = select.rows
+print(rows)
+
 c.execute("CREATE INDEX IF NOT EXISTS votes_index ON artists(votes)")
 
 
-async def addSongScore(artist, song, link):
-    returnResult = c.execute(f"SELECT * FROM artists WHERE artist='{artist}'")
+def addSongScore(artist, song, link):
+    returnResult = c.execute("SELECT * FROM artists WHERE artist=?", (artist,))
 
     result = returnResult.rows
 
     if result:
         returnResult = c.execute(
-            f"SELECT * FROM artists WHERE artist='{artist}' AND song='{song}'"
+            "SELECT * FROM artists WHERE artist=? AND song=?", (artist, song)
         )
         result = returnResult.rows
 
         if result:
+            print("exists")
             c.execute(
-                f"UPDATE artists SET votes=votes+1 WHERE artist='{artist}' AND song='{song}'"
+                "UPDATE artists SET votes=votes+1 WHERE artist=? AND song=?",
+                (artist, song),
             )
         else:
+            print("insert")
             c.execute(
-                f"INSERT INTO artists (artist, song, votes, link) VALUES ('{artist}', '{song}', 1, '{link}')"
+                "INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, 1, ?)",
+                (artist, song, link),
             )
     else:
         c.execute(
-            "INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, ?, ?)",
-            (artist, song, 1, link)
+            "INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, 1, ?)",
+            (artist, song, link),
         )
-
-
-conn = sqlite3.connect("dataBase.db")
-cursor = conn.cursor()
+        print("EXE")
 
 
 def printSongs():
@@ -58,10 +64,13 @@ def printSongs():
 
 
 def searchArtist(name):
+    print(name)
     result_set = c.execute(
         f"SELECT artist, song, link FROM artists WHERE artist='{name}' ORDER BY votes DESC LIMIT 6"
     )
     rows = result_set.rows
+
+    print(rows)
 
     result = [tuple(row) for row in rows]
     return result
@@ -110,14 +119,11 @@ def loadVoteSimilarity(name):
         f"SELECT votedName, link FROM artistVoteSim WHERE name='{name}' ORDER BY score DESC LIMIT 3"
     )
     rows = returnResult.rows
-    print(rows)
     result = [tuple(row) for row in rows]
     return result
 
 
 def storePlaylists(name, id):
-    print(name)
-    print(id)
 
     c.execute("CREATE TABLE IF NOT EXISTS playlists (name text, id text)")
 

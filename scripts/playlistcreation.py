@@ -21,8 +21,6 @@ createdPlaylists = db.loadPlaylists()
 
 accessTokenExpire = None
 
-print(createdPlaylists, " hello world")
-
 
 async def getPlaylist(name):
     if name in createdPlaylists:
@@ -35,7 +33,10 @@ async def getPlaylist(name):
 
 
 def playlistCreated(name):
-    if time.time() > createdPlaylists[name][1]:
+    print("hello")
+    print(createdPlaylists[name])
+    if time.time() < createdPlaylists[name][1]:
+        print("world")
         return
 
     playlistID = createdPlaylists[name][0]
@@ -82,7 +83,7 @@ async def createPlaylist(name):
     }
 
     songs = db.searchArtist(name)
-    print(str(songs) + " songs ")
+
     songsLinks = []
     for i in range(len(songs)):
         this = songs[i][2]
