@@ -15,9 +15,7 @@ c.execute(
     "CREATE TABLE IF NOT EXISTS artists (artist TEXT, song TEXT, votes INTEGER, link TEXT)"
 )
 
-select = c.execute("SELECT * FROM artists")
-rows = select.rows
-print(rows)
+
 
 c.execute("CREATE INDEX IF NOT EXISTS votes_index ON artists(votes)")
 
@@ -56,7 +54,7 @@ def addSongScore(artist, song, link):
 def printSongs():
     select = c.execute("SELECT * FROM artists")
     rows = select.rows
-    print(rows)
+
     return
     for row in rows:
         print(row)
@@ -64,13 +62,10 @@ def printSongs():
 
 
 def searchArtist(name):
-    print(name)
     result_set = c.execute(
         f"SELECT artist, song, link FROM artists WHERE artist='{name}' ORDER BY votes DESC LIMIT 6"
     )
     rows = result_set.rows
-
-    print(rows)
 
     result = [tuple(row) for row in rows]
     return result
@@ -99,7 +94,6 @@ def storeVoteSimilarity(artistName, votedArtistName, link):
 
     returnResult = c.execute(f"SELECT * FROM artistVoteSim WHERE name ='{artistName}'")
     result = returnResult.rows
-    print(result)
 
     if result:
         c.execute(f"UPDATE artistVoteSim SET score=score+1 WHERE name='{artistName}'")
@@ -142,6 +136,7 @@ def loadPlaylists():
     returnResult = c.execute(f"SELECT * FROM playlists")
 
     result = returnResult.rows
+    print(result)
     result = [tuple(row) for row in result]
     trueResult = {}
     for row in result:
@@ -149,3 +144,4 @@ def loadPlaylists():
         pass
 
     return trueResult
+

@@ -36,7 +36,6 @@ def make_request(url, headers, data, whereCalledFrom):
 
 
 def makeGetRequest(url, headers, data, whereCalledFrom):
-    
     response = None
     try:
         response = requests.get(url, headers=headers, params=data)

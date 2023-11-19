@@ -7,6 +7,8 @@ import scripts.spotifyFunctions as spotFunc
 import scripts.dataBase as db
 import json
 import threading
+import scripts.genFunctions as genFunc
+
 
 
 load_dotenv()
@@ -17,31 +19,29 @@ client_id = "92a2dede3a44403ab62b7b38138c861b"
 client_secret = "4951963c88db452da9c28003372b218e"
 
 # name of the artists: [id, checkTime]
-createdPlaylists = db.loadPlaylists()
+createdPlaylistes = db.loadPlaylists()
 
 accessTokenExpire = None
 
 
 async def getPlaylist(name):
-    if name in createdPlaylists:
-        t = threading.Thread(target=playlistCreated, args=(name,))
-        t.start()
+    global createdPlaylistes
+    if name in createdPlaylistes:
+        #t = threading.Thread(target=playlistCreated, args=(name,))
+        #t.start()
+        
 
-        return createdPlaylists[name]
+        if time.time() < createdPlaylistes[name][1]:  
+            return createdPlaylistes[name]
+        
+        playlistID = createdPlaylistes[name][0]
+        updatePlaylist(name, playlistID, createdPlaylistes)
+
+        return createdPlaylistes[name]
     
     return await createPlaylist(name)
 
 
-def playlistCreated(name):
-    print("hello")
-    print(createdPlaylists[name])
-    if time.time() < createdPlaylists[name][1]:
-        print("world")
-        return
-
-    playlistID = createdPlaylists[name][0]
-
-    updatePlaylist(name, playlistID)
 
 
 def refreshToken():
@@ -71,6 +71,8 @@ def refreshToken():
 
 
 async def createPlaylist(name):
+    global createdPlaylistes
+    print("something happend5")
     id = spotFunc.createPlaylist(
         access_token,
         f"{name} Best Songs",
@@ -99,33 +101,36 @@ async def createPlaylist(name):
     )
 
     t = time.time()
-    createdPlaylists[name] = [id, t + 5 * 60]
+    t = t + 5 * 60
+    print("something happend6")
+    createdPlaylistes[name] = [id, t]
     db.storePlaylists(name, id)
 
-    return createdPlaylists[name]
+    return
 
 
-def checkPlaylistCreation(name):
-    if name not in createPlaylist:
-        createPlaylist(name)
-        return
 
-    if time.time() > createdPlaylists[name][1]:
-        updatePlaylist(name)
-
-
-def updatePlaylist(name, id):
-    print(id, "id in 117 playlistcreation")
+def updatePlaylist(name, id, createdPlayisteds):
+    
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
     }
-
     CurrentHighestVotedSongs = db.searchArtist(name)
 
-    playlistSongs = requests.get(
-        f"https://api.spotify.com/v1/playlists/{id}/tracks", headers=headers
+    playlistSongs = genFunc.makeGetRequest(
+        f"https://api.spotify.com/v1/playlists/{id}/tracks",
+        headers=headers,
+        data="",
+        whereCalledFrom="update playlist line 119 in playlistcreation"
     )
+
+    if type(playlistSongs) == list:
+        error = playlistSongs[1]["error"]
+        if error["status"] == 401:
+            token = refreshToken()
+            return updatePlaylist(name, id, createdPlaylistes)
+        return
 
     playlistSongs = playlistSongs.json()["items"]
 
@@ -136,9 +141,9 @@ def updatePlaylist(name, id):
     SongsThatAreOnTheList = []
 
     for i in playlistSongs:
-        name = i["track"]["name"]
+        nameed = i["track"]["name"]
 
-        result = checkForSongInResponse(name, CurrentHighestVotedSongs)
+        result = checkForSongInResponse(nameed, CurrentHighestVotedSongs)
 
         if result is not None:
             SongsThatAreOnTheList.append(result)
@@ -146,14 +151,27 @@ def updatePlaylist(name, id):
 
         removeSongUrls.append({"uri": "spotify:track:" + i["track"]["id"]})
 
+
+    t = time.time()
+    t = t + 5 * 60
+    createdPlaylistes[name][1] = t
+
+    print("new time:", time.strftime("%H:%M:%S", time.localtime(createdPlaylistes[name][1])))
+
     if len(SongsThatAreOnTheList) == len(CurrentHighestVotedSongs):
-        return
+        print("returning")
+        return createdPlaylistes
 
     addSongsUrls = []
+    
 
-    for i, item in enumerate(SongsThatAreOnTheList):
-        if SongsThatAreOnTheList[i] not in CurrentHighestVotedSongs[i]:
-            addSongsUrls.append("spotify:track:" + CurrentHighestVotedSongs[i][2][31:])
+    SongsThatAreOnTheList = [song for sublist in SongsThatAreOnTheList for song in sublist]
+
+    for i, item in enumerate(CurrentHighestVotedSongs):
+        # Check if the track is already in the playlist
+        if item not in SongsThatAreOnTheList:
+            addSongsUrls.append("spotify:track:" + item[2][31:])
+
 
     data = {"tracks": removeSongUrls}
 
@@ -163,7 +181,7 @@ def updatePlaylist(name, id):
 
     addSongsRequest(datas, id)
 
-    return
+
 
 
 def getRemoveSongs(songs, song):
@@ -198,7 +216,7 @@ def addSongsRequest(data, id):
         data=json.dumps(data),
         headers=headers,
     )
-    print(response.json())
+    
     return
 
 
@@ -213,5 +231,5 @@ def deleteSongsUrl(data, id):
         data=json.dumps(data),
         headers=headers,
     )
-    print(response.json())
+    
     return

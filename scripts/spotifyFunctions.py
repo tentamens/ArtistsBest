@@ -33,7 +33,7 @@ async def getArtistSongs(inputName, inputSong, userToken):
     return [output[0]["name"], output[0]["url"]]
 
 
-async def getArtist(inputName, userToken):
+def getArtist(inputName, userToken):
     headers = {"Authorization": f"Bearer {userToken}"}
     params = {"q": inputName, "type": "artist"}
 
@@ -48,17 +48,13 @@ async def getArtist(inputName, userToken):
         return [None, response.status_code]
 
     data = response.json()
+    
+    
+    
     artists = data["artists"]["items"]
-    artistAndSongs = [
-        {"name": artist["name"], "url": artist["external_urls"]["spotify"]}
-        for artist in artists
-    ]
+    
 
-    justArtists = [{"name": artist["name"]} for artist in artistAndSongs]
-    closedOutput = genFunc.find_closest_word(inputName, justArtists)
-    output = [item for item in artistAndSongs if item["name"] == closedOutput]
-
-    return [output[0]["name"], output[0]["url"]]
+    return [artists[0]["name"], artists[0]["external_urls"]["spotify"]]
 
 
 def getArtistID(inputName, userToken):
@@ -126,7 +122,7 @@ def createPlaylist(userToken, name, description):
         data,
         whereCalledFrom="createdPlaylist line 115 spotifyFunctions.py",
     )
-
+    
     if type(response) == list:
         error = response[1]["error"]
         if error["status"] == 401:
@@ -146,6 +142,7 @@ def fetchSong(artistName, name, userToken):
     data = {
         "q": query,
         "type": "track",
+        "market": "US"
     }
 
 
@@ -156,9 +153,10 @@ def fetchSong(artistName, name, userToken):
         whereCalledFrom="fetchSong line 140 spotifyFunctions.py",
     )
 
-    print(response)
 
     if type(response) == list:
         return ["error"]
+
+    
 
     return response.json()["tracks"]["items"][0]

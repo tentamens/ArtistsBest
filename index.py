@@ -8,7 +8,8 @@ import scripts.playlistcreation as playlistcreation
 
 
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form, Depends, HTTPException
+from pydantic import BaseModel
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
@@ -20,6 +21,9 @@ import string
 import random
 import base64
 import logging
+import scripts.spotifyPreviewUrls as previewUrl
+import scripts.googleSignin as googleSignin
+
 
 searchArtistCache = {}
 
@@ -53,6 +57,14 @@ with open("searchArtistsCache.json", "r") as read_file:
 
 with open("songCache.json", "r") as read_file:
     songCache = json.load(read_file)
+
+
+class TokenData(BaseModel):
+    token: str
+
+class UniqueUserIdResponse(BaseModel):
+    unique_user_id: str
+
 
 
 def handleArtistsCache(name, userToken):
@@ -136,6 +148,7 @@ def login():
 @app.api_route("/api/load/bestSongs", methods=["POST"])
 async def loadBestSongs(request: Request):
     data = await request.json()
+    print(data)
     userToken = data["token"]
     artistTrueName = data["artistName"]
 
@@ -148,19 +161,22 @@ async def loadBestSongs(request: Request):
     result = {"songs": result, "playlist": playlist[0], "similartyVotes": voteSimilarity}
     result = json.dumps(result)
 
-    print(result)
 
     return JSONResponse(content=result, status_code=200)
 
 
 @app.api_route("/api/load/searchArtist", methods=["POST"])
 async def searchArtist(request: Request):
+    
     data = await request.json()
+    
 
-    artistName = await spotFunc.getArtist(data["artistName"], data["token"])
+    artistName = spotFunc.getArtist(data["artistName"], data["token"])
 
 
     return JSONResponse(content=artistName[0], status_code=200)
+
+
 
 
 @app.api_route("/api/get/token", methods=["GET"])
@@ -189,7 +205,6 @@ async def vote(data: Request):
     token = data["token"]
     songName = data["songName"]
 
-    return JSONResponse(content="", status_code=400)
 
     if  artistname not in songCache:
         songCache[artistname] = {}
@@ -209,7 +224,9 @@ async def vote(data: Request):
     with open("songCache.json", "w") as write_file:
         json.dump(songCache, write_file)
 
-    
+
+
+
 
 
 @app.api_route("/api/get/artistsvotes", methods=["POST"])
@@ -231,8 +248,23 @@ async def similarityVote(data: Request):
 
     dataBase.storeVoteSimilarity(artistName, votedArtistName[0], votedArtistName[1])
 
+@app.post("/api/post/signin", response_model=UniqueUserIdResponse)
+async def signIn(data: Request):
+    data = await data.json()
+    token = data["token"]
+    googleSignin.signIn()
+    userIdConfirm = googleSignin.validateGoogleToken(token)
+    
+    
+    return
+
+
+    googleSignin.signIn()
+
+
+
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=6969)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
