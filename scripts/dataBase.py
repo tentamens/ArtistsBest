@@ -145,3 +145,26 @@ def loadPlaylists():
 
     return trueResult
 
+
+def storeUserGoogle(uuid, googleToken):
+    
+    c.execute(f"CREATE TABLE IF NOT EXISTS users (googleToken text, uuid text)")
+
+    returnResult = c.execute("SELECT * FROM users WHERE googleToken=?", (googleToken,))
+    result = returnResult.rows
+
+    if result:
+        c.execute("UPDATE users SET googleToken=? WHERE uuid=?", (googleToken, uuid))
+        return
+
+    c.execute("INSERT into users (googleToken, uuid) VALUES (?, ?)", (googleToken, uuid))
+
+
+def loadUserGoogle(token):
+    c.execute(f"CREATE TABLE IF NOT EXISTS users (googleToken text, uuid text)")
+    returnResult = c.execute("SELECT googleToken FROM users WHERE googleToken=?", (token,))
+    result = returnResult.rows
+    print(result, " hello world")
+    if result:
+        return [True, result[0][0]]
+    return [False]

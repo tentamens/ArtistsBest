@@ -248,15 +248,15 @@ async def similarityVote(data: Request):
 
     dataBase.storeVoteSimilarity(artistName, votedArtistName[0], votedArtistName[1])
 
-@app.post("/api/post/signin", response_model=UniqueUserIdResponse)
+@app.api_route("/api/post/signin", methods=["POST"])
 async def signIn(data: Request):
     data = await data.json()
     token = data["token"]
-    googleSignin.signIn()
-    userIdConfirm = googleSignin.validateGoogleToken(token)
+    uuid = await googleSignin.signin(token)
     
+    print(uuid)
     
-    return
+    return JSONResponse(status_code=200, content=uuid)
 
 
     googleSignin.signIn()
