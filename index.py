@@ -5,7 +5,7 @@ import scripts.spotifyFunctions as spotFunc
 import scripts.genFunctions as genFunc
 import scripts.cacheUpdating as cache
 import scripts.playlistcreation as playlistcreation
-
+import scripts.userManagement as userManagement
 
 
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
@@ -204,26 +204,32 @@ async def vote(data: Request):
     artistname = data["artistName"]
     token = data["token"]
     songName = data["songName"]
-
-
+    uuid = data["uuid"]
+    
+    status = userManagement.voteOnSong(artistname, uuid)
+    
     if  artistname not in songCache:
         songCache[artistname] = {}
 
     if songName in songCache[artistname]:
-        dataBase.addSongScore(artistname, songName, songCache[artistname][songName])
+            
+        returnResult = userManagement.verifyStatusAndUpdate(status, artistname, songName, songCache[artistname][songName])
+        return JSONResponse(status_code=returnResult[0], content=returnResult[1])
+
 
     result = spotFunc.fetchSong(artistname, songName, token)
 
-    dataBase.addSongScore(artistname, result["name"], result["external_urls"]["spotify"])
+    returnResult = userManagement.verifyStatusAndUpdate(status, artistname, result["name"], result["external_urls"]["spotify"])
 
     if result["name"] in songCache[artistname]:
-        return
+        return JSONResponse(status_code=returnResult[0], content=returnResult[1])
     
     songCache[artistname][result["name"]] = result["external_urls"]["spotify"]
 
     with open("songCache.json", "w") as write_file:
         json.dump(songCache, write_file)
-
+    
+    return JSONResponse(status_code=returnResult[0], content=returnResult[1])
 
 
 
