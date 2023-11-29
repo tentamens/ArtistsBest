@@ -1,4 +1,4 @@
-
+import htppRequest
 import scripts.dataBase as dataBase
 import apikeys
 import scripts.spotifyFunctions as spotFunc
@@ -24,6 +24,7 @@ import logging
 import scripts.spotifyPreviewUrls as previewUrl
 import scripts.googleSignin as googleSignin
 import os
+import dotenv
 
 searchArtistCache = {}
 
@@ -75,7 +76,8 @@ async def gen():
 
 @app.api_route("/test/update")
 def update():
-    refresh_token = "BQBKSB5njDXM4Ej8FfH-tdIm07-r3kLIAAaIHAnVcyHnWIioFiz1xMqgKOH_yHf7HCHCQHQPUs6OuYNUYWduPmlr300KNKCE2QKSK4re6Bwx6K4Aj7KxHVt-PQi9bExHnz8gmEB_4Du2UENB53ost-qxQwVMLj080OQ71j_y5bLLfcA_UirKIANnRvCj3Q2q-x6V1icXvw93p1vnAfot7XPhNwihXtw096g2286I"
+    return
+    refresh_token = "hello there"
     auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
 
     authOptions = {
@@ -128,7 +130,7 @@ def login():
     scope = "playlist-modify-public user-read-email"
     params = {
         "response_type": "code",
-        "client_id": htppRequest.client_id,
+        "client_id": "hi there",
         "scope": scope,
         "redirect_uri": redirect_uri,
         "state": state,
