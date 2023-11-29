@@ -6,3 +6,4 @@ dataBase.db
 .vscode
 compose.yaml
 apikeys.py
+env
