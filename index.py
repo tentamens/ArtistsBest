@@ -23,7 +23,7 @@ import base64
 import logging
 import scripts.spotifyPreviewUrls as previewUrl
 import scripts.googleSignin as googleSignin
-
+import os
 
 searchArtistCache = {}
 
@@ -35,8 +35,8 @@ activeThreads = {}
 
 app = FastAPI()
 
-client_id = "92a2dede3a44403ab62b7b38138c861b"
-client_secret = "4951963c88db452da9c28003372b218e"
+client_id = os.getenv("SPOTIFY_CLIENT_ID")
+client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 origins = ["*"]
 
@@ -57,14 +57,6 @@ with open("searchArtistsCache.json", "r") as read_file:
 
 with open("songCache.json", "r") as read_file:
     songCache = json.load(read_file)
-
-
-class TokenData(BaseModel):
-    token: str
-
-class UniqueUserIdResponse(BaseModel):
-    unique_user_id: str
-
 
 
 def handleArtistsCache(name, userToken):

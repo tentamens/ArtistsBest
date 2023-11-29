@@ -15,8 +15,8 @@ load_dotenv()
 access_token = os.getenv("SPOTIFY_ACCESS_TOKEN")
 refresh_token = os.getenv("SPOTIFY_REFRESH_TOKEN")
 
-client_id = "92a2dede3a44403ab62b7b38138c861b"
-client_secret = "4951963c88db452da9c28003372b218e"
+client_id = os.getenv("SPOTIFY_CLIENT_ID")
+client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 # name of the artists: [id, checkTime]
 createdPlaylistes = db.loadPlaylists()
