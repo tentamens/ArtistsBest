@@ -5,19 +5,15 @@ artistsUpdateTime = {}
 
 
 def artistSearched(name, token):
-    print(artistsUpdateTime)
     if name in artistsUpdateTime:
         checkTimeLeft(name, token)
-        print("artistHasTimeLeft")
         return
-    print("adding artist")
     addArtist(name, token)
 
 
 def checkTimeLeft(name, token):
     global artistsUpdateTime
 
-    print("world")
     if artistsUpdateTime[name] < time.time():
         return
     times = time.time()

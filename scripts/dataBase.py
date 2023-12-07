@@ -4,6 +4,7 @@ import libsql_client
 from dotenv import load_dotenv
 import os
 import time
+import scripts.userManagement as userManagement
 
 load_dotenv()
 
@@ -16,8 +17,13 @@ c.execute(
 )
 
 
-
+c.execute(f"CREATE TABLE IF NOT EXISTS userVoteDict (voteDict text)")
 c.execute("CREATE INDEX IF NOT EXISTS votes_index ON artists(votes)")
+c.execute(f"CREATE TABLE IF NOT EXISTS timesSearched (name text, score integer)")
+c.execute(f"CREATE TABLE IF NOT EXISTS artistVoteSim (name text, votedName text, score integer, link text)")
+c.execute("CREATE TABLE IF NOT EXISTS playlists (name text, id text)")
+c.execute(f"CREATE TABLE IF NOT EXISTS users (googleToken text, uuid text)")
+
 
 
 def addSongScore(artist, song, link):
@@ -76,7 +82,7 @@ def storeArtistSearch():
 
 
 def storeArtistSearchs(name):
-    c.execute(f"CREATE TABLE IF NOT EXISTS timesSearched (name text, score integer)")
+    
 
     returnResult = c.execute(f"SELECT * FROM timesSearched WHERE name='{name}'")
     result = returnResult.rows
@@ -88,9 +94,6 @@ def storeArtistSearchs(name):
 
 
 def storeVoteSimilarity(artistName, votedArtistName, link):
-    c.execute(
-        f"CREATE TABLE IF NOT EXISTS artistVoteSim (name text, votedName text, score integer, link text)"
-    )
 
     returnResult = c.execute(f"SELECT * FROM artistVoteSim WHERE name ='{artistName}'")
     result = returnResult.rows
@@ -106,9 +109,6 @@ def storeVoteSimilarity(artistName, votedArtistName, link):
 
 
 def loadVoteSimilarity(name):
-    c.execute(
-        f"CREATE TABLE IF NOT EXISTS artistVoteSim (name text, votedName text, score integer, link text)"
-    )
     returnResult = c.execute(
         f"SELECT votedName, link FROM artistVoteSim WHERE name='{name}' ORDER BY score DESC LIMIT 3"
     )
@@ -118,8 +118,6 @@ def loadVoteSimilarity(name):
 
 
 def storePlaylists(name, id):
-
-    c.execute("CREATE TABLE IF NOT EXISTS playlists (name text, id text)")
 
     returnResult = c.execute("SELECT * FROM playlists WHERE name=?", (name,))
     result = returnResult.rows
@@ -132,7 +130,7 @@ def storePlaylists(name, id):
 
 
 def loadPlaylists():
-    c.execute(f"CREATE TABLE IF NOT EXISTS playlists (name text, id text)")
+
     returnResult = c.execute(f"SELECT * FROM playlists")
 
     result = returnResult.rows
@@ -146,9 +144,7 @@ def loadPlaylists():
     return trueResult
 
 
-def storeUserGoogle(uuid, googleToken):
-    
-    c.execute(f"CREATE TABLE IF NOT EXISTS users (googleToken text, uuid text)")
+def storeUserGoogle(googleToken, uuid):
 
     returnResult = c.execute("SELECT * FROM users WHERE googleToken=?", (googleToken,))
     result = returnResult.rows
@@ -161,10 +157,24 @@ def storeUserGoogle(uuid, googleToken):
 
 
 def loadUserGoogle(token):
-    c.execute(f"CREATE TABLE IF NOT EXISTS users (googleToken text, uuid text)")
-    returnResult = c.execute("SELECT googleToken FROM users WHERE googleToken=?", (token,))
+    
+    returnResult = c.execute("SELECT * FROM users WHERE googleToken=?", (token,))
     result = returnResult.rows
-    print(result, " hello world")
+    print(result)
     if result:
         return [True, result[0][0]]
     return [False]
+
+def storeUserVoteDict():
+    c.execute(f"UPDATE userVoteDict SET voteDict=?", (str(userManagement.users),))
+    
+
+
+def loadUserVoteDict():
+    returnResult = c.execute("SELECT * FROM userVoteDict")
+    result = returnResult.rows
+    if result == []:
+        return {}
+    userManagement.users = json.loads(result[0])
+
+loadUserVoteDict()

@@ -200,7 +200,13 @@ async def vote(data: Request):
     songName = data["songName"]
     uuid = data["uuid"]
     
-    status = userManagement.voteOnSong(artistname, uuid)
+    if token == None:
+        return JSONResponse(status_code=400, content={"response": "no token", "exitCode": "128"})
+    
+    if token == "Null":
+        return JSONResponse(status_code=400, content={"response": "no token", "exitCode": "129"})
+
+    status = await userManagement.voteOnSong(artistname, uuid)
     
     if  artistname not in songCache:
         songCache[artistname] = {}
@@ -242,11 +248,18 @@ async def similarityVote(data: Request):
     data = await data.json()
     userToken = data["token"]
     artistName = data["artistName"]
+        
+    if userToken == None:
+        return JSONResponse(status_code=400, content={"response": "no token", "exitCode": "128"})
+    
+    if userToken == "Null":
+        return JSONResponse(status_code=400, content={"response": "no token", "exitCode": "129"})
     votedArtistFalse = data["votedArtist"]
 
     votedArtistName = await spotFunc.getArtist(votedArtistFalse, userToken)
 
     dataBase.storeVoteSimilarity(artistName, votedArtistName[0], votedArtistName[1])
+
 
 @app.api_route("/api/post/signin", methods=["POST"])
 async def signIn(data: Request):
@@ -254,12 +267,7 @@ async def signIn(data: Request):
     token = data["token"]
     uuid = await googleSignin.signin(token)
     
-    print(uuid)
-    
     return JSONResponse(status_code=200, content=uuid)
-
-
-    googleSignin.signIn()
 
 
 
