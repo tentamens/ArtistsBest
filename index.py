@@ -232,9 +232,6 @@ async def vote(data: Request):
     return JSONResponse(status_code=returnResult[0], content=returnResult[1])
 
 
-
-
-
 @app.api_route("/api/get/artistsvotes", methods=["POST"])
 async def retrieveVotes(data: Request):
     data = await data.json()
@@ -255,11 +252,11 @@ async def similarityVote(data: Request):
     if userToken == "Null":
         return JSONResponse(status_code=400, content={"response": "no token", "exitCode": "129"})
     votedArtistFalse = data["votedArtist"]
-
     votedArtistName = await spotFunc.getArtist(votedArtistFalse, userToken)
-
-    dataBase.storeVoteSimilarity(artistName, votedArtistName[0], votedArtistName[1])
-
+    status = await userManagement.VoteOnArtist(votedArtistName, data["uuid"])
+    
+    returnResult = userManagement.verifyStatusAndUpdate(status, artistName, votedArtistName[0], votedArtistName[1])
+    return JSONResponse(status_code=returnResult[0], content=returnResult[1])
 
 @app.api_route("/api/post/signin", methods=["POST"])
 async def signIn(data: Request):
@@ -268,7 +265,6 @@ async def signIn(data: Request):
     uuid = await googleSignin.signin(token)
     
     return JSONResponse(status_code=200, content=uuid)
-
 
 
 

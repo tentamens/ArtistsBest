@@ -16,7 +16,7 @@ c.execute(
     "CREATE TABLE IF NOT EXISTS artists (artist TEXT, song TEXT, votes INTEGER, link TEXT)"
 )
 
-
+c.execute(f"CREATE TABLE IF NOT EXISTS currentWeek (week int)")
 c.execute(f"CREATE TABLE IF NOT EXISTS userVoteDict (voteDict text)")
 c.execute("CREATE INDEX IF NOT EXISTS votes_index ON artists(votes)")
 c.execute(f"CREATE TABLE IF NOT EXISTS timesSearched (name text, score integer)")
@@ -178,3 +178,15 @@ def loadUserVoteDict():
     userManagement.users = json.loads(result[0])
 
 loadUserVoteDict()
+
+def storeCurrentWeek():
+    c.execute(f"UPDATE currentWeek SET week=?", (userManagement.currentWeek,))
+
+def loadCurrentWeek():
+    returnResult = c.execute("SELECT * FROM currentWeek")
+    result = returnResult.rows
+    if result == []:
+        userManagement.currentWeek = 0
+    userManagement.currentWeek = result[0][0]
+
+loadCurrentWeek()
