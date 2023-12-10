@@ -6,7 +6,7 @@ import json
 #  WhichWeekTheyLastVoted:int}, #ArtistVote [IftheyhaveusedtheirFirst5Votes:bool, theNumberofVotes:int], WhichWeekTheyLastVoted:int}}
 users = {}
 
-with open("userHolder.json", "r") as file:
+with open("usersHolder.json", "r") as file:
     users = json.load(file)
     file.close()
 
@@ -60,7 +60,7 @@ def verifyStatusAndUpdate(status, artistName, songName, songLink):
         return [410, {}]
     
     db.addSongScore(artistName, songName, songLink)
-    return [200, "successfully vote on artist"]
+    return [200, {"songName": songName}]
 
 def verifyStatusAndUpdateArtist(status, artistName, votedArtistName, link):
     if status == 401:
@@ -71,7 +71,7 @@ def verifyStatusAndUpdateArtist(status, artistName, votedArtistName, link):
         return [410, {}]
     
     db.storeVoteSimilarity(artistName=artistName, votedArtistName=votedArtistName, link=link)
-    return [200, "successfully vote on artist"]
+    return [200, {"artistName": artistName}]
 
 def VoteOnArtist(artistName, uuid):
     if uuid not in users:

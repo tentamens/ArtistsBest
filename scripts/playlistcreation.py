@@ -72,7 +72,6 @@ def refreshToken():
 
 async def createPlaylist(name):
     global createdPlaylistes
-    print("something happend5")
     id = spotFunc.createPlaylist(
         access_token,
         f"{name} Best Songs",
@@ -102,7 +101,6 @@ async def createPlaylist(name):
 
     t = time.time()
     t = t + 5 * 60
-    print("something happend6")
     createdPlaylistes[name] = [id, t]
     db.storePlaylists(name, id)
 
@@ -156,10 +154,7 @@ def updatePlaylist(name, id, createdPlayisteds):
     t = t + 5 * 60
     createdPlaylistes[name][1] = t
 
-    print("new time:", time.strftime("%H:%M:%S", time.localtime(createdPlaylistes[name][1])))
-
     if len(SongsThatAreOnTheList) == len(CurrentHighestVotedSongs):
-        print("returning")
         return createdPlaylistes
 
     addSongsUrls = []

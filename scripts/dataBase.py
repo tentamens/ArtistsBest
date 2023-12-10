@@ -16,6 +16,7 @@ c.execute(
     "CREATE TABLE IF NOT EXISTS artists (artist TEXT, song TEXT, votes INTEGER, link TEXT)"
 )
 
+c.execute(f"CREATE TABLE IF NOT EXISTS searches (UserInput text, result text, times int)")
 c.execute(f"CREATE TABLE IF NOT EXISTS currentWeek (week int)")
 c.execute(f"CREATE TABLE IF NOT EXISTS userVoteDict (voteDict text)")
 c.execute("CREATE INDEX IF NOT EXISTS votes_index ON artists(votes)")
@@ -36,15 +37,14 @@ def addSongScore(artist, song, link):
             "SELECT * FROM artists WHERE artist=? AND song=?", (artist, song)
         )
         result = returnResult.rows
-
+        
         if result:
-            print("exists")
+            
             c.execute(
                 "UPDATE artists SET votes=votes+1 WHERE artist=? AND song=?",
                 (artist, song),
             )
         else:
-            print("insert")
             c.execute(
                 "INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, 1, ?)",
                 (artist, song, link),
@@ -54,14 +54,12 @@ def addSongScore(artist, song, link):
             "INSERT INTO artists (artist, song, votes, link) VALUES (?, ?, 1, ?)",
             (artist, song, link),
         )
-        print("EXE")
 
 
 def printSongs():
-    select = c.execute("SELECT * FROM artists")
+    select = c.execute("SELECT * FROM artistVoteSim")
     rows = select.rows
 
-    return
     for row in rows:
         print(row)
         pass
@@ -95,13 +93,12 @@ def storeArtistSearchs(name):
 
 def storeVoteSimilarity(artistName, votedArtistName, link):
 
-    returnResult = c.execute(f"SELECT * FROM artistVoteSim WHERE name ='{artistName}'")
+    returnResult = c.execute(f"SELECT * FROM artistVoteSim WHERE name =? and votedName=?", (artistName, votedArtistName))
     result = returnResult.rows
 
     if result:
-        c.execute(f"UPDATE artistVoteSim SET score=score+1 WHERE name='{artistName}'")
+        c.execute(f"UPDATE artistVoteSim SET score=score+1 WHERE name=? and votedName=?", (artistName, votedArtistName))
         return
-
     c.execute(
         f"INSERT into artistVoteSim (name, votedName, score, link) VALUES ('{artistName}', '{votedArtistName}', 1, '{link}')"
     )
@@ -134,7 +131,6 @@ def loadPlaylists():
     returnResult = c.execute(f"SELECT * FROM playlists")
 
     result = returnResult.rows
-    print(result)
     result = [tuple(row) for row in result]
     trueResult = {}
     for row in result:
@@ -160,7 +156,6 @@ def loadUserGoogle(token):
     
     returnResult = c.execute("SELECT * FROM users WHERE googleToken=?", (token,))
     result = returnResult.rows
-    print(result)
     if result:
         return [True, result[0][0]]
     return [False]
@@ -187,6 +182,18 @@ def loadCurrentWeek():
     result = returnResult.rows
     if result == []:
         userManagement.currentWeek = 0
+        return
     userManagement.currentWeek = result[0][0]
 
 loadCurrentWeek()
+
+def storeEachSearch(input, result):
+    returnResult = c.execute("SELECT * searches WHERE UserInput=? result=?"(input, result))
+    result = returnResult.rows
+
+    if result:
+        c.execute("UPDATE searches SET times=times+1 WHERE UserInput=? result=?"(input, result))
+        return
+    
+    c.execute("INSERT into searches (UserInput, result, times) VALUES (?, ?, 1)", (input, result))
+

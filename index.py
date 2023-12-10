@@ -167,6 +167,7 @@ async def searchArtist(request: Request):
 
     artistName = spotFunc.getArtist(data["artistName"], data["token"])
 
+    dataBase.storeEachSearch(data["artistName"], artistName[0], )
 
     return JSONResponse(content=artistName[0], status_code=200)
 
@@ -219,6 +220,14 @@ async def vote(data: Request):
 
     result = spotFunc.fetchSong(artistname, songName, token)
 
+    if result == None:
+        return JSONResponse(status_code=401, content={"exitCode": 130})
+
+    if type(result) == list:
+        return JSONResponse(status_code=400, content={"response": "no token", "exitCode": 157})
+
+    dataBase.storeEachSearch(artistname, result["name"])
+
     returnResult = userManagement.verifyStatusAndUpdate(status, artistname, result["name"], result["external_urls"]["spotify"])
 
     if result["name"] in songCache[artistname]:
@@ -252,10 +261,15 @@ async def similarityVote(data: Request):
     if userToken == "Null":
         return JSONResponse(status_code=400, content={"response": "no token", "exitCode": "129"})
     votedArtistFalse = data["votedArtist"]
-    votedArtistName = await spotFunc.getArtist(votedArtistFalse, userToken)
-    status = await userManagement.VoteOnArtist(votedArtistName, data["uuid"])
+    votedArtistName = spotFunc.getArtist(votedArtistFalse, userToken)
+    status = userManagement.VoteOnArtist(votedArtistName[0], data["uuid"])
     
-    returnResult = userManagement.verifyStatusAndUpdate(status, artistName, votedArtistName[0], votedArtistName[1])
+    dataBase.storeEachSearch(artistName, votedArtistName[0])
+
+    if status == 401:
+        return JSONResponse(status_code=status, content={"response": "invalid Token", "exitCode": "130"})
+
+    returnResult = userManagement.verifyStatusAndUpdateArtist(status, artistName, votedArtistName[0], votedArtistName[1])
     return JSONResponse(status_code=returnResult[0], content=returnResult[1])
 
 @app.api_route("/api/post/signin", methods=["POST"])
@@ -271,4 +285,4 @@ async def signIn(data: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=6969)

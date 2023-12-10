@@ -7,3 +7,6 @@ dataBase.db
 compose.yaml
 apikeys.py
 env
+userHolder.json
+songCache.json
+searchedArtistsCache.json

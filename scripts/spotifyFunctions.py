@@ -153,10 +153,12 @@ def fetchSong(artistName, name, userToken):
         whereCalledFrom="fetchSong line 140 spotifyFunctions.py",
     )
 
-
     if type(response) == list:
         return ["error"]
 
     
+
+    if response.json()["tracks"]["total"] == 0:
+        return None
 
     return response.json()["tracks"]["items"][0]
