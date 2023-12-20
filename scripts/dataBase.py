@@ -12,9 +12,12 @@ load_dotenv()
 c = libsql_client.create_client_sync(
     url=os.getenv("URL"), auth_token=os.getenv("TOKEN")
 )
+
 c.execute(
     "CREATE TABLE IF NOT EXISTS artists (artist TEXT, song TEXT, votes INTEGER, link TEXT)"
 )
+
+
 
 c.execute(f"CREATE TABLE IF NOT EXISTS searches (UserInput text, result text, times int)")
 c.execute(f"CREATE TABLE IF NOT EXISTS currentWeek (week int)")
@@ -72,6 +75,7 @@ def searchArtist(name):
     rows = result_set.rows
 
     result = [tuple(row) for row in rows]
+    print(result)
     return result
 
 
@@ -172,7 +176,6 @@ def loadUserVoteDict():
         return {}
     userManagement.users = json.loads(result[0])
 
-loadUserVoteDict()
 
 def storeCurrentWeek():
     c.execute(f"UPDATE currentWeek SET week=?", (userManagement.currentWeek,))
@@ -188,12 +191,15 @@ def loadCurrentWeek():
 loadCurrentWeek()
 
 def storeEachSearch(input, result):
-    returnResult = c.execute("SELECT * searches WHERE UserInput=? result=?"(input, result))
-    result = returnResult.rows
+    returnResult = c.execute("SELECT * FROM searches WHERE UserInput=? and result=?", (input, result))
+    returns = returnResult.rows
 
-    if result:
-        c.execute("UPDATE searches SET times=times+1 WHERE UserInput=? result=?"(input, result))
+    if returns:
+        c.execute("UPDATE searches SET times=times+1 WHERE UserInput=? and result=?", (input, result))
         return
     
-    c.execute("INSERT into searches (UserInput, result, times) VALUES (?, ?, 1)", (input, result))
+    c.execute("INSERT INTO searches (UserInput, result, times) VALUES (?, ?, 1)", (input, result))
+
+
+
 

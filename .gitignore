@@ -10,3 +10,4 @@ env
 userHolder.json
 songCache.json
 searchedArtistsCache.json
+searchedArtistNames.json

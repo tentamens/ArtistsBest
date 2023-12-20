@@ -1,3 +1,5 @@
+print("hello world")
+
 import htppRequest
 import scripts.dataBase as dataBase
 import apikeys
@@ -27,9 +29,8 @@ import os
 import dotenv
 
 searchArtistCache = {}
-
 songCache = {}
-
+searchArtistNames = {}
 
 
 activeThreads = {}
@@ -52,12 +53,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-with open("searchArtistsCache.json", "r") as read_file:
+#/usr/files
+#/data/
+with open("/data/searchArtistsCache.json", "r") as read_file:
     searchArtistCache = json.load(read_file)
 
-with open("songCache.json", "r") as read_file:
+with open("/data/songCache.json", "r") as read_file:
     songCache = json.load(read_file)
+
+with open("/data/searchedArtistNames.json", "r") as read_file:
+    searchArtistNames = json.load(read_file)
 
 
 def handleArtistsCache(name, userToken):
@@ -68,6 +73,7 @@ def handleArtistsCache(name, userToken):
 
 @app.api_route("/", methods=["GET"])
 async def gen():
+    return 200
     playlistcreation.refreshToken()
     data = await playlistcreation.getPlaylist("NF")
     print(data[0])
@@ -122,6 +128,7 @@ def callback(request: Request):
 
 
 @app.api_route("/login")
+
 def login():
     return 200
     redirect_uri = "http://localhost:8000/callback"
@@ -142,10 +149,11 @@ def login():
 @app.api_route("/api/load/bestSongs", methods=["POST"])
 async def loadBestSongs(request: Request):
     data = await request.json()
-    print(data)
     userToken = data["token"]
     artistTrueName = data["artistName"]
 
+    if artistTrueName not in searchArtistNames:
+        return JSONResponse(status_code=400, content={"response": "no artist"})
 
     playlist = await playlistcreation.getPlaylist(artistTrueName)
 
@@ -167,7 +175,15 @@ async def searchArtist(request: Request):
 
     artistName = spotFunc.getArtist(data["artistName"], data["token"])
 
+    if artistName[0] == None:
+        return JSONResponse(status_code=401, content={"response": "no Token"})
+
     dataBase.storeEachSearch(data["artistName"], artistName[0], )
+
+    if artistName[0] not in searchArtistNames:
+        searchArtistNames[artistName[0]] = {}
+        with open("/data/searchedArtistNames.json", "w") as write_file:
+            json.dump(searchArtistNames, write_file)
 
     return JSONResponse(content=artistName[0], status_code=200)
 

@@ -8,11 +8,11 @@ def updateCurrentWeek():
     db.storeCurrentWeek()
 
 def storeUsers():
-    db.storeUserVoteDict()
+    print("hello world")
 
 schedule.every().day.at("00:00").do(updateCurrentWeek)
 
-schedule.every(5).minutes.do(storeUsers)
+schedule.every(0.5).minutes.do(storeUsers)
 
 
 while True:

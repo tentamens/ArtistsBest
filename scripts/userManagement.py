@@ -6,7 +6,7 @@ import json
 #  WhichWeekTheyLastVoted:int}, #ArtistVote [IftheyhaveusedtheirFirst5Votes:bool, theNumberofVotes:int], WhichWeekTheyLastVoted:int}}
 users = {}
 
-with open("usersHolder.json", "r") as file:
+with open("/data/usersHolder.json", "r") as file:
     users = json.load(file)
     file.close()
 
@@ -34,7 +34,7 @@ async def voteOnSong(artistName, uuid):
 
 
 def storeUsers():
-    with open("usersHolder.json", "w") as f:
+    with open("/data/usersHolder.json", "w") as f:
         json.dump(users, f)
         f.close()
 

@@ -27,7 +27,6 @@ def addArtist(name, token):
     times = time.time()
     artistsUpdateTime[name] = times + 10 * 60
     updateCache(name, token)
-    print(artistsUpdateTime)
 
 
 def updateCache(name, token):

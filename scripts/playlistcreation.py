@@ -104,7 +104,7 @@ async def createPlaylist(name):
     createdPlaylistes[name] = [id, t]
     db.storePlaylists(name, id)
 
-    return
+    return createdPlaylistes[name]
 
 
 
